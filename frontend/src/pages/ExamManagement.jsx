@@ -140,7 +140,7 @@ export default function ExamManagement() {
               >
                 <div style={{ flex: 1, marginRight: '20px' }}>
                   {editingExam?.id === exam.id ? (
-                    <div onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: '10px' }}>
+                    <div onClick={e => e.stopPropagation()} className="flex-col-mobile" style={{ display: 'flex', gap: '10px' }}>
                       <input 
                         type="text" 
                         className="input-field" 
@@ -202,7 +202,7 @@ export default function ExamManagement() {
                                 onChange={(e) => setEditingQuestion({...editingQuestion, model_answer: e.target.value})}
                                 rows={3}
                               />
-                              <div style={{ display: 'flex', gap: '10px' }}>
+                              <div className="flex-col-mobile" style={{ display: 'flex', gap: '10px' }}>
                                 <button className="btn-primary" onClick={() => handleUpdateQuestion(q.id, exam.id)}>Save</button>
                                 <button className="btn-secondary" onClick={() => setEditingQuestion(null)}>Cancel</button>
                               </div>

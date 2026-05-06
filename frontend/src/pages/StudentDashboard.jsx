@@ -65,10 +65,10 @@ export default function StudentDashboard() {
   };
 
   return (
-    <div style={{ display: 'flex', height: '100vh', width: '100%', backgroundColor: 'transparent', fontFamily: "'Inter', 'Poppins', sans-serif", overflow: 'hidden' }}>
+    <div className="dashboard-layout" style={{ display: 'flex', height: '100vh', width: '100%', backgroundColor: 'transparent', fontFamily: "'Inter', 'Poppins', sans-serif", overflow: 'hidden' }}>
       
       {/* Left Sidebar - Light Theme */}
-      <aside style={{ 
+      <aside className="sidebar-mobile" style={{ 
         width: '320px', 
         background: '#ffffff', 
         boxShadow: '4px 0 20px rgba(0, 0, 0, 0.05)',
@@ -255,7 +255,7 @@ export default function StudentDashboard() {
       </aside>
 
       {/* Right Main Section - Now floating with darker light pink background over the grid */}
-      <main style={{ 
+      <main className="main-content-mobile" style={{ 
         flexGrow: 1, 
         padding: '48px 6%', 
         margin: '20px', 

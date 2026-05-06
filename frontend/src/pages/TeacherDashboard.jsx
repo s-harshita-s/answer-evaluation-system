@@ -146,9 +146,9 @@ export default function TeacherDashboard() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h3 style={{ fontSize: '1.5rem' }}>Exam Management</h3>
-        <div style={{ display: 'flex', gap: '10px' }}>
+      <div className="flex-col-mobile" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap: '15px' }}>
+        <h3 style={{ fontSize: '1.5rem', margin: 0 }}>Exam Management</h3>
+        <div className="flex-col-mobile" style={{ display: 'flex', gap: '10px', width: '100%' }}>
           <button onClick={() => { setShowUpload(false); setShowAdd(!showAdd); }} className="btn-secondary" style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Plus size={18} /> Create Exam
           </button>
@@ -199,7 +199,7 @@ export default function TeacherDashboard() {
             style={{ marginBottom: '15px' }}
           />
           <p style={{ color: 'var(--text-muted)', marginBottom: '15px', fontSize: '0.9rem' }}>Format: <code>1, question text</code> in the first box and <code>1, answer text</code> in the second box.</p>
-          <div style={{ display: 'flex', gap: '20px', marginBottom: '15px' }}>
+          <div className="flex-col-mobile" style={{ display: 'flex', gap: '20px', marginBottom: '15px' }}>
             <div style={{ flex: 1 }}>
               <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600 }}>Questions</label>
               <textarea
@@ -225,7 +225,7 @@ export default function TeacherDashboard() {
               />
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div className="flex-col-mobile" style={{ display: 'flex', gap: '10px' }}>
             <button type="submit" className="btn-primary" style={{ padding: '10px 20px' }}>Upload</button>
             <button type="button" onClick={() => setShowUpload(false)} className="btn-secondary" style={{ padding: '10px 20px' }}>Cancel</button>
           </div>
@@ -233,47 +233,49 @@ export default function TeacherDashboard() {
       )}
 
       <h3 id="submissions-table" style={{ fontSize: '1.5rem', marginTop: '40px', marginBottom: '20px' }}>Recent Student Submissions</h3>
-      <div className="glass-panel" style={{ overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-          <thead>
-            <tr style={{ background: 'rgba(0,0,0,0.02)', borderBottom: '1px solid #eaeaea' }}>
-              <th style={{ padding: '15px 20px' }}>Student</th>
-              <th style={{ padding: '15px 20px' }}>Roll No.</th>
-              <th style={{ padding: '15px 20px' }}>Semester</th>
-              <th style={{ padding: '15px 20px' }}>Exam / Question</th>
-              <th style={{ padding: '15px 20px' }}>Score</th>
-              <th style={{ padding: '15px 20px' }}>Result</th>
-            </tr>
-          </thead>
-          <tbody>
-            {submissions.map(sub => (
-              <tr key={sub.id} style={{ borderBottom: '1px solid #eaeaea' }}>
-                <td style={{ padding: '15px 20px', fontWeight: 600 }}>{sub.student_name}</td>
-                <td style={{ padding: '15px 20px', color: 'var(--text-muted)' }}>{sub.roll_number || 'N/A'}</td>
-                <td style={{ padding: '15px 20px', color: 'var(--text-muted)' }}>{sub.semester || 'N/A'}</td>
-                <td style={{ padding: '15px 20px', color: 'var(--text-muted)' }}>
-                  <div style={{ fontWeight: 600, color: '#444' }}>{sub.exam_title}</div>
-                  <div style={{ fontSize: '0.9rem' }}>{sub.question_text.substring(0, 50)}...</div>
-                </td>
-                <td style={{ padding: '15px 20px' }}>
-                  <span style={{ 
-                    background: sub.percentage > 75 ? '#dcfce7' : sub.percentage > 40 ? '#fef08a' : '#fee2e2',
-                    color: sub.percentage > 75 ? '#166534' : sub.percentage > 40 ? '#854d0e' : '#991b1b',
-                    padding: '4px 12px',
-                    borderRadius: '100px',
-                    fontWeight: 600
-                  }}>
-                    {sub.percentage}%
-                  </span>
-                </td>
-                <td style={{ padding: '15px 20px' }}>{sub.result}</td>
+      <div className="glass-panel" style={{ overflow: 'hidden', padding: 0 }}>
+        <div className="table-wrapper">
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '600px' }}>
+            <thead>
+              <tr style={{ background: 'rgba(0,0,0,0.02)', borderBottom: '1px solid #eaeaea' }}>
+                <th style={{ padding: '15px 20px' }}>Student</th>
+                <th style={{ padding: '15px 20px' }}>Roll No.</th>
+                <th style={{ padding: '15px 20px' }}>Semester</th>
+                <th style={{ padding: '15px 20px' }}>Exam / Question</th>
+                <th style={{ padding: '15px 20px' }}>Score</th>
+                <th style={{ padding: '15px 20px' }}>Result</th>
               </tr>
-            ))}
-            {submissions.length === 0 && (
-              <tr><td colSpan="6" style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>No submissions yet.</td></tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {submissions.map(sub => (
+                <tr key={sub.id} style={{ borderBottom: '1px solid #eaeaea' }}>
+                  <td style={{ padding: '15px 20px', fontWeight: 600 }}>{sub.student_name}</td>
+                  <td style={{ padding: '15px 20px', color: 'var(--text-muted)' }}>{sub.roll_number || 'N/A'}</td>
+                  <td style={{ padding: '15px 20px', color: 'var(--text-muted)' }}>{sub.semester || 'N/A'}</td>
+                  <td style={{ padding: '15px 20px', color: 'var(--text-muted)' }}>
+                    <div style={{ fontWeight: 600, color: '#444' }}>{sub.exam_title}</div>
+                    <div style={{ fontSize: '0.9rem' }}>{sub.question_text.substring(0, 50)}...</div>
+                  </td>
+                  <td style={{ padding: '15px 20px' }}>
+                    <span style={{ 
+                      background: sub.percentage > 75 ? '#dcfce7' : sub.percentage > 40 ? '#fef08a' : '#fee2e2',
+                      color: sub.percentage > 75 ? '#166534' : sub.percentage > 40 ? '#854d0e' : '#991b1b',
+                      padding: '4px 12px',
+                      borderRadius: '100px',
+                      fontWeight: 600
+                    }}>
+                      {sub.percentage}%
+                    </span>
+                  </td>
+                  <td style={{ padding: '15px 20px' }}>{sub.result}</td>
+                </tr>
+              ))}
+              {submissions.length === 0 && (
+                <tr><td colSpan="6" style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>No submissions yet.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

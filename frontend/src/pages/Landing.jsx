@@ -12,17 +12,17 @@ export default function Landing() {
         </div>
       </nav>
 
-      <main style={{ 
+      <main className="flex-col-mobile text-center-mobile p-mobile-5" style={{ 
         flex: 1, 
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'center',
-        padding: '0 5%',
+        padding: '40px 5%',
         gap: '5%'
       }}>
         
         {/* Left Side: Content */}
-        <div style={{ flex: 1, maxWidth: '600px' }}>
+        <div className="items-center-mobile flex-col-mobile" style={{ flex: 1, maxWidth: '600px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
           <div style={{ 
             display: 'inline-flex', 
             alignItems: 'center', 

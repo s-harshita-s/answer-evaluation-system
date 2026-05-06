@@ -116,7 +116,7 @@ export default function ExamView() {
         </div>
       ))}
 
-      <div className="glass-panel" style={{ padding: '20px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', bottom: '20px', zIndex: 100 }}>
+      <div className="glass-panel action-bar-mobile" style={{ padding: '20px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', bottom: '20px', zIndex: 100 }}>
         <button 
           onClick={handleSaveDraft}
           className="btn-secondary" 

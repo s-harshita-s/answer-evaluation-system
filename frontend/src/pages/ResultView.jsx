@@ -112,7 +112,7 @@ export default function ResultView() {
             <p style={{ margin: 0, color: '#444', fontStyle: 'italic' }}>"{sub.student_answer}"</p>
           </div>
           
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '20px' }}>
             <div>
               <h5 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontSize: '0.95rem' }}>
                 <BookOpen size={16} color="var(--accent-blue)" /> Semantic Meaning: {sub.semantic_score || 0}%
