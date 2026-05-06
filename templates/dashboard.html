@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - AI Evaluation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.0/umd/lucide.min.js"></script>
+</head>
+<body class="index-body">
+
+    <!-- Background Elements -->
+    <div class="glow-orb orb-2"></div>
+    <div class="glow-orb orb-3"></div>
+
+    <div class="container hero-container">
+        <div class="glass-card hero-card" style="padding-top: 2rem;">
+            <!-- Header bar -->
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem; margin-bottom: 2rem;">
+                <h3 class="gradient-text">Nexus Platform</h3>
+                <a href="{{ url_for('logout') }}" style="color: var(--accent-pink); font-size: 0.9rem; font-weight: 600;">Logout</a>
+            </div>
+
+            <h1>Welcome, <span style="color: var(--primary-cyan)">{{ user.name }}</span>!</h1>
+            
+            <p style="margin-bottom: 1rem;">
+                You are logged in as a <strong>{{ user.role.capitalize() }}</strong>.
+            </p>
+
+            {% if user.role == 'student' %}
+                <div style="background: var(--input-bg); border-radius: 12px; padding: 1rem; display: inline-block; text-align: left; margin-bottom: 2rem; border: 1px solid var(--glass-border);">
+                    <p style="margin-bottom: 0.5rem; color: #fff;"><i data-lucide="hash" style="width: 16px; display:inline-block; vertical-align: middle"></i> Roll No: {{ user.roll_no }}</p>
+                    <p style="margin-bottom: 0; color: #fff;"><i data-lucide="graduation-cap" style="width: 16px; display:inline-block; vertical-align: middle"></i> Semester: {{ user.semester }}</p>
+                </div>
+            {% endif %}
+            
+            <br>
+            
+            <a href="#" class="btn-primary start-btn" style="display: inline-flex;">
+                <span>Start AI Evaluation Tool</span>
+                <i data-lucide="arrow-right"></i>
+            </a>
+            
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

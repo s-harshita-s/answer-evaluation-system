@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentication - AI Evaluation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.0/umd/lucide.min.js"></script>
+</head>
+<body class="auth-body">
+
+    <!-- Glowing Background Setup -->
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+
+    <div class="container auth-container">
+        
+        <div class="glass-card auth-card">
+            
+            <div class="auth-header">
+                <h2>Join <span class="gradient-text">Nexus</span></h2>
+                <p>Login or create an account to continue.</p>
+            </div>
+
+            <!-- Tab Switcher -->
+            <div class="tab-switcher">
+                <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">Login</button>
+                <button class="tab-btn" id="tab-register" onclick="switchTab('register')">Register</button>
+            </div>
+
+            <hr class="divider">
+
+            <!-- Forms Container -->
+            <div class="forms-wrapper">
+                
+                <!-- LOGIN FORM -->
+                <form id="login-form" class="auth-form active-form" onsubmit="handleLogin(event)">
+                    
+                    <div class="input-group">
+                        <label for="login-email">Email Address</label>
+                        <div class="input-field">
+                            <i data-lucide="mail"></i>
+                            <input type="email" id="login-email" placeholder="john@example.com" required>
+                        </div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="login-password">Password</label>
+                        <div class="input-field">
+                            <i data-lucide="lock"></i>
+                            <input type="password" id="login-password" placeholder="••••••••" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-primary w-full">Sign In</button>
+                </form>
+
+                <!-- REGISTER FORM -->
+                <form id="register-form" class="auth-form" onsubmit="handleRegister(event)">
+                    
+                    <div class="role-selector">
+                        <label>I am a:</label>
+                        <div class="radio-pill-group">
+                            <input type="radio" id="role-student" name="role" value="student" checked onchange="toggleStudentFields()">
+                            <label for="role-student">Student</label>
+
+                            <input type="radio" id="role-teacher" name="role" value="teacher" onchange="toggleStudentFields()">
+                            <label for="role-teacher">Teacher</label>
+                        </div>
+                    </div>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label for="reg-name">Full Name</label>
+                            <div class="input-field">
+                                <i data-lucide="user"></i>
+                                <input type="text" id="reg-name" placeholder="John Doe" required>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="reg-email">Email</label>
+                            <div class="input-field">
+                                <i data-lucide="mail"></i>
+                                <input type="email" id="reg-email" placeholder="john@university.edu" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="reg-password">Create Password</label>
+                        <div class="input-field">
+                            <i data-lucide="lock"></i>
+                            <input type="password" id="reg-password" placeholder="Secure Password" required>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Student Fields -->
+                    <div id="student-fields" class="dynamic-group">
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label for="reg-roll">Roll Number</label>
+                                <div class="input-field">
+                                    <i data-lucide="hash"></i>
+                                    <input type="text" id="reg-roll" placeholder="e.g. CS-2023-45">
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <label for="reg-sem">Semester</label>
+                                <div class="input-field">
+                                    <i data-lucide="graduation-cap"></i>
+                                    <select id="reg-sem">
+                                        <option value="" disabled selected>Select</option>
+                                        <option value="1">Semester 1</option>
+                                        <option value="2">Semester 2</option>
+                                        <option value="3">Semester 3</option>
+                                        <option value="4">Semester 4</option>
+                                        <option value="5">Semester 5</option>
+                                        <option value="6">Semester 6</option>
+                                        <option value="7">Semester 7</option>
+                                        <option value="8">Semester 8</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-primary w-full">Create Account</button>
+                </form>
+            </div>
+
+            <!-- Toast / Alert placeholder -->
+            <div id="alert-box" class="alert hidden"></div>
+
+        </div>
+    </div>
+
+    <!-- Inject JS logic and icons -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

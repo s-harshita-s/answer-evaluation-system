@@ -1,0 +1,52 @@
+[
+  {
+    "id": 1,
+    "question": "What is Artificial Intelligence?",
+    "model_answer": "Artificial Intelligence is the simulation of human intelligence in machines that are programmed to think and learn."
+  },
+  {
+    "id": 2,
+    "question": "What is Machine Learning?",
+    "model_answer": "Machine Learning is a subset of AI that allows systems to learn from data and improve without being explicitly programmed."
+  },
+  {
+    "id": 3,
+    "question": "What is Deep Learning?",
+    "model_answer": "Deep Learning is a subset of machine learning that uses neural networks with many layers to analyze complex data."
+  },
+  {
+    "id": 4,
+    "question": "What is Data Science?",
+    "model_answer": "Data Science is the field that uses scientific methods, algorithms, and systems to extract knowledge from data."
+  },
+  {
+    "id": 5,
+    "question": "What is Natural Language Processing?",
+    "model_answer": "Natural Language Processing is a field of AI that enables machines to understand and process human language."
+  },
+  {
+    "id": 6,
+    "question": "What is a Neural Network?",
+    "model_answer": "A neural network is a computational model inspired by the human brain that is used to recognize patterns."
+  },
+  {
+    "id": 7,
+    "question": "What is Supervised Learning?",
+    "model_answer": "Supervised learning is a type of machine learning where the model is trained on labeled data."
+  },
+  {
+    "id": 8,
+    "question": "What is Unsupervised Learning?",
+    "model_answer": "Unsupervised learning is a type of machine learning where the model finds patterns in unlabeled data."
+  },
+  {
+    "id": 9,
+    "question": "What is Overfitting?",
+    "model_answer": "Overfitting occurs when a model learns the training data too well and performs poorly on new data."
+  },
+  {
+    "id": 10,
+    "question": "What is Cloud Computing?",
+    "model_answer": "Cloud computing is the delivery of computing services like storage and processing over the internet."
+  }
+]

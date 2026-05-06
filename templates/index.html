@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Evaluation Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.0/umd/lucide.min.js"></script>
+</head>
+<body class="index-body">
+
+    <!-- Background Elements -->
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+    <div class="glow-orb orb-3"></div>
+
+    <div class="container hero-container">
+        <div class="glass-card hero-card">
+            <h1>Welcome to the Future of <br> <span class="gradient-text">AI Evaluation</span></h1>
+            <p>Smart grading. Instant feedback. Total clarity.</p>
+            
+            <a href="{{ url_for('auth') }}" class="btn-primary start-btn">
+                <span>Start Here</span>
+                <i data-lucide="arrow-right"></i>
+            </a>
+            
+            <div class="features-row">
+                <div class="feature">
+                    <i data-lucide="brain-circuit"></i>
+                    <span>Semantic Analysis</span>
+                </div>
+                <div class="feature">
+                    <i data-lucide="zap"></i>
+                    <span>Instant Results</span>
+                </div>
+                <div class="feature">
+                    <i data-lucide="shield-check"></i>
+                    <span>Secure Platform</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
