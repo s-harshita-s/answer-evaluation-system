@@ -52,6 +52,7 @@ export default function StudentDashboard() {
   const [activeSection, setActiveSection] = useState('dashboard');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [hoveredPoint, setHoveredPoint] = useState(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -162,7 +163,7 @@ export default function StudentDashboard() {
   };
 
   return (
-    <div className="dashboard-container" style={{ 
+    <div className={`dashboard-container ${isMobileMenuOpen ? 'mobile-sidebar-open' : ''}`} style={{ 
       display: 'flex', 
       height: '100vh', 
       width: '100vw', 
@@ -227,6 +228,79 @@ export default function StudentDashboard() {
         .avatar-option:hover {
           transform: scale(1.1);
           border-color: #E754A6 !important;
+        }
+
+        /* Mobile Responsive Overrides */
+        @media (max-width: 768px) {
+          .dashboard-container {
+            flex-direction: column !important;
+            height: 100vh !important;
+            overflow: hidden !important;
+          }
+
+          /* sidebar becomes a mobile overlay drawer */
+          aside {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            bottom: 0 !important;
+            height: 100vh !important;
+            width: 280px !important;
+            z-index: 2000 !important;
+            box-shadow: 8px 0 25px rgba(0,0,0,0.15) !important;
+            transform: translateX(-100%) !important;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+          }
+
+          .mobile-sidebar-open aside {
+            transform: translateX(0) !important;
+          }
+
+          /* Main panel gets scrollable */
+          main {
+            width: 100% !important;
+            padding: 20px 16px 80px 16px !important;
+            height: 100vh !important;
+            overflow-y: auto !important;
+          }
+
+          .mobile-hamburger-btn {
+            display: flex !important;
+          }
+
+          .header-desc-desktop {
+            display: none !important;
+          }
+
+          /* Card & Grid resets to vertical stacks */
+          .stats-grid {
+            grid-template-columns: 1fr !important;
+            gap: 16px !important;
+          }
+          
+          .exams-grid {
+            grid-template-columns: 1fr !important;
+            gap: 16px !important;
+          }
+
+          /* Re-styling welcome card inside Dashboard on mobile */
+          .dashboard-welcome-card {
+            height: auto !important;
+            padding: 20px !important;
+            margin-bottom: 16px !important;
+          }
+          .dashboard-welcome-img {
+            display: none !important; /* Hide image on mobile to save space */
+          }
+          .dashboard-welcome-text {
+            max-width: 100% !important;
+          }
+
+          /* Profile grid stacks on mobile */
+          .profile-grid {
+            grid-template-columns: 1fr !important;
+            gap: 20px !important;
+          }
         }
       `}</style>
 
@@ -313,7 +387,7 @@ export default function StudentDashboard() {
             return (
               <button 
                 key={item.id}
-                onClick={() => setActiveSection(item.id)}
+                onClick={() => { setActiveSection(item.id); setIsMobileMenuOpen(false); }}
                 className="sidebar-nav-link"
                 style={{ 
                   width: '100%', 
@@ -347,6 +421,19 @@ export default function StudentDashboard() {
         </div>
       </aside>
 
+      {/* Mobile Drawer Backdrop */}
+      {isMobileMenuOpen && (
+        <div 
+          onClick={() => setIsMobileMenuOpen(false)}
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.4)',
+            zIndex: 1999
+          }}
+        />
+      )}
+
       {/* Right Main Content Panel */}
       <main style={{ 
         flexGrow: 1, 
@@ -365,15 +452,37 @@ export default function StudentDashboard() {
           display: 'flex', 
           justifyContent: 'space-between', 
           alignItems: 'center', 
-          marginBottom: '24px'
+          marginBottom: '24px',
+          gap: '12px'
         }}>
-          <div>
-            <h1 style={{ fontSize: '1.8rem', fontWeight: '700', color: '#262626', margin: 0 }}>
-              {sectionHeaders[activeSection].title}
-            </h1>
-            <p style={{ color: '#888888', fontSize: '0.9rem', marginTop: '2px', fontWeight: '400' }}>
-              {sectionHeaders[activeSection].desc}
-            </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button 
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="mobile-hamburger-btn"
+              style={{
+                display: 'none',
+                background: 'none',
+                border: 'none',
+                color: '#888888',
+                cursor: 'pointer',
+                padding: '8px',
+                borderRadius: '8px',
+                backgroundColor: '#FFFFFF',
+                border: '1px solid #ECECEC',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <Menu size={20} />
+            </button>
+            <div>
+              <h1 style={{ fontSize: '1.8rem', fontWeight: '700', color: '#262626', margin: 0 }}>
+                {sectionHeaders[activeSection].title}
+              </h1>
+              <p className="header-desc-desktop" style={{ color: '#888888', fontSize: '0.9rem', marginTop: '2px', fontWeight: '400' }}>
+                {sectionHeaders[activeSection].desc}
+              </p>
+            </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -435,7 +544,7 @@ export default function StudentDashboard() {
           {activeSection === 'dashboard' && (
             <>
               {/* Greeting Card - styled so image overflows beautifully */}
-              <div style={{ 
+              <div className="dashboard-welcome-card" style={{ 
                 background: 'linear-gradient(135deg, #F4EDFF 0%, #E7D7FF 100%)',
                 borderRadius: '14px',
                 padding: '24px 28px',
@@ -448,7 +557,7 @@ export default function StudentDashboard() {
                 height: '160px',
                 marginBottom: '24px'
               }}>
-                <div style={{ maxWidth: '65%', zIndex: 1 }}>
+                <div className="dashboard-welcome-text" style={{ maxWidth: '65%', zIndex: 1 }}>
                   <h2 style={{ fontSize: '1.8rem', fontWeight: '700', color: '#262626', margin: 0 }}>
                     Hi, {userName} 👋
                   </h2>
@@ -456,7 +565,7 @@ export default function StudentDashboard() {
                     Welcome back. Ready to continue your exams today?
                   </p>
                 </div>
-                <div style={{ 
+                <div className="dashboard-welcome-img" style={{ 
                   position: 'absolute',
                   right: '24px', 
                   bottom: '-15px', 
@@ -481,7 +590,7 @@ export default function StudentDashboard() {
               </div>
 
               {/* Statistics Cards - Clickable Tab Redirection added */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px' }}>
+              <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px' }}>
                 {/* Available Exams Stat Card */}
                 <div 
                   onClick={() => setActiveSection('exams')}
@@ -586,7 +695,7 @@ export default function StudentDashboard() {
                     <p style={{ fontSize: '0.9rem', color: '#888888', maxWidth: '380px', margin: 0 }}>Check back later. When your instructor assigns an exam, it will appear here.</p>
                   </div>
                 ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+                  <div className="exams-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
                     {exams.slice(0, 4).map((exam) => {
                       const examSubs = getSubmissionsForExam(exam.id);
                       const isEvaluated = examSubs.length > 0;
@@ -700,9 +809,9 @@ export default function StudentDashboard() {
 
           {/* SECTION 2: PROFILE TAB - Layout updated to be extremely attractive (ID card overlap style) */}
           {activeSection === 'profile' && (
-            <div style={{
+            <div className="profile-grid" style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
               gap: '24px',
               alignItems: 'start'
             }}>
@@ -1030,7 +1139,7 @@ export default function StudentDashboard() {
                   <p style={{ fontSize: '0.95rem', color: '#888888', maxWidth: '400px', margin: 0 }}>There are currently no exams scheduled for you. Please check back later.</p>
                 </div>
               ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '24px' }}>
+                <div className="exams-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
                   {exams.map((exam) => {
                     const examSubs = getSubmissionsForExam(exam.id);
                     const isEvaluated = examSubs.length > 0;
@@ -1166,7 +1275,7 @@ export default function StudentDashboard() {
                   <p style={{ fontSize: '0.95rem', color: '#888888', maxWidth: '400px', margin: 0 }}>You have not completed any exams. Complete your pending tests to view detailed AI breakdown results.</p>
                 </div>
               ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '24px' }}>
+                <div className="exams-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
                   {completedExams.map((exam) => {
                     const examSubs = getSubmissionsForExam(exam.id);
                     const avgPercentage = Math.round(examSubs.reduce((acc, sub) => acc + sub.percentage, 0) / examSubs.length);

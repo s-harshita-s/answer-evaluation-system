@@ -89,7 +89,7 @@ export default function ExamView() {
   if (!exam || questions.length === 0) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading exam...</div>;
 
   return (
-    <div style={{ padding: '40px 5%', maxWidth: '900px', margin: '0 auto' }}>
+    <div className="exam-container" style={{ maxWidth: '900px', margin: '0 auto' }}>
       <button 
         onClick={() => navigate('/student')} 
         style={{ background: 'none', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', cursor: 'pointer', marginBottom: '30px' }}

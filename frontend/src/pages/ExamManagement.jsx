@@ -115,7 +115,7 @@ export default function ExamManagement() {
   };
 
   return (
-    <div style={{ padding: '40px 5%', maxWidth: '1000px', margin: '0 auto' }}>
+    <div className="exam-management-container" style={{ maxWidth: '1000px', margin: '0 auto' }}>
       <button 
         onClick={() => navigate('/teacher')} 
         style={{ background: 'none', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', cursor: 'pointer', marginBottom: '30px' }}

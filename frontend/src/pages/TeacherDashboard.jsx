@@ -102,7 +102,7 @@ export default function TeacherDashboard() {
   };
 
   return (
-    <div style={{ padding: '40px 5%', maxWidth: '1200px', margin: '0 auto' }}>
+    <div className="teacher-container" style={{ maxWidth: '1200px', margin: '0 auto' }}>
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
         <h2>Teacher Portal <span style={{ color: 'var(--text-muted)', fontSize: '1.2rem' }}>| {userName}</span></h2>
         <button onClick={handleLogout} className="btn-secondary" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>

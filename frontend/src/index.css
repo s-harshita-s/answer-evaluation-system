@@ -75,6 +75,10 @@ a {
 }
 
 .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
   background: linear-gradient(135deg, var(--accent-pink), var(--accent-orange));
   color: white;
   padding: 14px 28px;
@@ -93,6 +97,10 @@ a {
 }
 
 .btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
   background: white;
   color: var(--text-dark);
   padding: 14px 28px;
@@ -189,9 +197,9 @@ a {
   }
   
   /* Headings */
-  h1 { font-size: 2.5rem !important; }
-  h2 { font-size: 1.8rem !important; }
-  h3 { font-size: 1.4rem !important; }
+  h1 { font-size: 2.3rem !important; }
+  h2 { font-size: 1.7rem !important; }
+  h3 { font-size: 1.3rem !important; }
 
   /* Buttons */
   .btn-primary, .btn-secondary {
@@ -215,6 +223,45 @@ a {
     padding: 15px 5%;
   }
 
+  .nav-bar > div {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .nav-bar > div > a {
+    margin-right: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Form uploads grid stacking */
+  form .flex-col-mobile {
+    gap: 15px !important;
+  }
+
+  /* Container Overrides for Mobile Screens */
+  .exam-container,
+  .result-container,
+  .teacher-container,
+  .exam-management-container {
+    padding: 20px 16px !important;
+  }
+
+  /* Specific header styling overrides on mobile */
+  header[style*="display: flex"],
+  header[style*="display: 'flex'"],
+  header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 15px !important;
+  }
+
+  header > button,
+  header > div {
+    width: 100% !important;
+  }
+
   /* Dashboard Specific Overrides */
   .dashboard-layout {
     flex-direction: column !important;
@@ -236,7 +283,17 @@ a {
   }
   .action-bar-mobile {
     flex-direction: column !important;
-    gap: 10px !important;
+    gap: 12px !important;
+    position: relative !important;
+    bottom: 0 !important;
+    margin-top: 20px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Ultra mobile tweaks */
+  .glass-panel {
+    padding: 16px !important;
   }
 }
 

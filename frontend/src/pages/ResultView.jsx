@@ -48,7 +48,7 @@ export default function ResultView() {
   const isPass = totalPercentage > 40;
 
   return (
-    <div style={{ padding: '40px 5%', maxWidth: '900px', margin: '0 auto' }}>
+    <div className="result-container" style={{ maxWidth: '900px', margin: '0 auto' }}>
       <button 
         onClick={() => navigate('/student')} 
         style={{ background: 'none', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', cursor: 'pointer', marginBottom: '30px' }}
