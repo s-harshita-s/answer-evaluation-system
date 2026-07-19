@@ -42,6 +42,8 @@ export default function Auth() {
         localStorage.setItem('name', res.data.user.name);
         if (res.data.user.roll_number) localStorage.setItem('roll_number', res.data.user.roll_number);
         if (res.data.user.semester) localStorage.setItem('semester', res.data.user.semester);
+        if (res.data.user.department) localStorage.setItem('department', res.data.user.department);
+        if (res.data.user.avatar) localStorage.setItem('avatar', res.data.user.avatar);
         
         if (res.data.user.role === 'student') navigate('/student');
         else navigate('/teacher');

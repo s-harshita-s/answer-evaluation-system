@@ -47,7 +47,19 @@ app.post('/api/auth/login', (req, res) => {
         if (!isMatch) return res.status(401).json({ error: 'Invalid email or password' });
 
         const token = jwt.sign({ id: user.id, role: user.role, name: user.name }, JWT_SECRET, { expiresIn: '1d' });
-        res.json({ token, user: { id: user.id, name: user.name, role: user.role, email: user.email, roll_number: user.roll_number, semester: user.semester } });
+        res.json({ 
+            token, 
+            user: { 
+                id: user.id, 
+                name: user.name, 
+                role: user.role, 
+                email: user.email, 
+                roll_number: user.roll_number, 
+                semester: user.semester,
+                department: user.department || null,
+                avatar: user.avatar || null
+            } 
+        });
     });
 });
 
@@ -62,6 +74,27 @@ const authenticate = (req, res, next) => {
         next();
     });
 };
+
+// --- USER PROFILE ROUTES ---
+
+app.get('/api/users/profile', authenticate, (req, res) => {
+    db.get(`SELECT name, roll_number, semester, department, avatar FROM users WHERE id = ?`, [req.user.id], (err, user) => {
+        if (err || !user) return res.status(404).json({ error: 'User not found' });
+        res.json(user);
+    });
+});
+
+app.put('/api/users/profile', authenticate, (req, res) => {
+    const { name, roll_number, semester, department, avatar } = req.body;
+    db.run(
+        `UPDATE users SET name = ?, roll_number = ?, semester = ?, department = ?, avatar = ? WHERE id = ?`,
+        [name, roll_number, semester, department, avatar || null, req.user.id],
+        function(err) {
+            if (err) return res.status(500).json({ error: 'Database error' });
+            res.json({ message: 'Profile updated successfully' });
+        }
+    );
+});
 
 // --- QUESTION ROUTES ---
 

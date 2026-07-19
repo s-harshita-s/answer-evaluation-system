@@ -24,6 +24,8 @@ const db = new sqlite3.Database(dbPath, (err) => {
             // Alter table just in case it already exists without these columns
             db.run(`ALTER TABLE users ADD COLUMN roll_number TEXT`, (err) => { /* ignore if exists */ });
             db.run(`ALTER TABLE users ADD COLUMN semester TEXT`, (err) => { /* ignore if exists */ });
+            db.run(`ALTER TABLE users ADD COLUMN department TEXT`, (err) => { /* ignore if exists */ });
+            db.run(`ALTER TABLE users ADD COLUMN avatar TEXT`, (err) => { /* ignore if exists */ });
             // Exams table
             db.run(`CREATE TABLE IF NOT EXISTS exams (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,

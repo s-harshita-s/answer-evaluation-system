@@ -28,10 +28,10 @@ body {
   font-family: 'Outfit', sans-serif;
   background-color: var(--bg-color);
   color: var(--text-dark);
-  /* Subtle grid pattern - made slightly more visible */
-  background-image: linear-gradient(rgba(0, 0, 0, 0.07) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.07) 1px, transparent 1px);
-  background-size: 40px 40px;
+  /* Subtle grid pattern - made extremely soft and lavender-tinted */
+  background-image: linear-gradient(rgba(184, 123, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(184, 123, 255, 0.04) 1px, transparent 1px);
+  background-size: 30px 30px;
   background-attachment: fixed;
   line-height: 1.6;
 }
