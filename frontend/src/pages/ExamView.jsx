@@ -23,6 +23,26 @@ export default function ExamView() {
     }
   }, [id]);
 
+  // Auto-save draft on answers change
+  useEffect(() => {
+    if (Object.keys(answers).length > 0) {
+      localStorage.setItem(`draft_exam_${id}`, JSON.stringify(answers));
+    }
+  }, [answers, id]);
+
+  // Warn before leaving page if answering
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      const hasContent = Object.values(answers).some(a => a && a.trim().length > 0);
+      if (hasContent && !isSubmitting) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [answers, isSubmitting]);
+
   const fetchExamAndQuestions = async () => {
     const token = localStorage.getItem('token');
     try {
@@ -37,7 +57,7 @@ export default function ExamView() {
       });
       setQuestions(qRes.data);
     } catch (err) {
-      console.error(err);
+      console.error("Error fetching exam questions:", err);
     }
   };
 
@@ -49,6 +69,17 @@ export default function ExamView() {
     setIsSaving(true);
     localStorage.setItem(`draft_exam_${id}`, JSON.stringify(answers));
     setTimeout(() => setIsSaving(false), 800);
+  };
+
+  const handleBackToDashboard = () => {
+    const hasContent = Object.values(answers).some(a => a && a.trim().length > 0);
+    if (hasContent) {
+      if (window.confirm("Are you sure you want to go back to Dashboard? Your answers are saved as draft.")) {
+        navigate('/student');
+      }
+    } else {
+      navigate('/student');
+    }
   };
 
   const handleSubmit = async () => {
@@ -80,8 +111,8 @@ export default function ExamView() {
       // Navigate to results for this exam
       navigate(`/result/${id}`);
     } catch (err) {
-      console.error(err);
-      alert("Failed to submit. " + (err.response?.data?.error || ""));
+      console.error("Submit error:", err);
+      alert("Failed to submit: " + (err.response?.data?.error || err.message));
       setIsSubmitting(false);
     }
   };
@@ -91,7 +122,8 @@ export default function ExamView() {
   return (
     <div className="exam-container" style={{ maxWidth: '900px', margin: '0 auto' }}>
       <button 
-        onClick={() => navigate('/student')} 
+        type="button"
+        onClick={handleBackToDashboard} 
         style={{ background: 'none', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', cursor: 'pointer', marginBottom: '30px' }}
       >
         <ArrowLeft size={18} /> Back to Dashboard
@@ -118,6 +150,7 @@ export default function ExamView() {
 
       <div className="glass-panel action-bar-mobile" style={{ padding: '20px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', bottom: '20px', zIndex: 100 }}>
         <button 
+          type="button"
           onClick={handleSaveDraft}
           className="btn-secondary" 
           style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
@@ -126,6 +159,7 @@ export default function ExamView() {
         </button>
 
         <button 
+          type="button"
           onClick={handleSubmit}
           disabled={isSubmitting}
           className="btn-primary" 

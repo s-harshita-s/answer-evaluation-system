@@ -3,10 +3,34 @@ const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const db = require('./db');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Ensure uploads folder exists in workspace
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Serve uploaded notes files statically
+app.use('/uploads', express.static(uploadsDir));
+
+// Multer storage configuration
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, uploadsDir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + '-' + file.originalname);
+    }
+});
+const upload = multer({ storage: storage });
 
 const JWT_SECRET = 'your_jwt_secret_here';
 
@@ -118,34 +142,177 @@ app.post('/api/questions', authenticate, (req, res) => {
     });
 });
 
-app.post('/api/questions/upload', authenticate, (req, res) => {
+app.post('/api/exams/:id/questions', authenticate, (req, res) => {
+    if (req.user.role !== 'teacher') return res.status(403).json({ error: 'Forbidden' });
+    
+    const examId = req.params.id;
+    const { question_text, model_answer } = req.body;
+    if (!question_text) {
+        return res.status(400).json({ error: 'Question text is required' });
+    }
+
+    db.run(
+        `INSERT INTO questions (exam_id, teacher_id, question_text, model_answer) VALUES (?, ?, ?, ?)`,
+        [examId, req.user.id, question_text, model_answer || ''],
+        function(err) {
+            if (err) return res.status(500).json({ error: 'Database error adding question' });
+            res.status(201).json({ message: 'Question added successfully', questionId: this.lastID });
+        }
+    );
+});
+
+app.post('/api/questions/upload', authenticate, upload.single('notes'), (req, res) => {
     if (req.user.role !== 'teacher') return res.status(403).json({ error: 'Forbidden' });
     
     const { title, questions } = req.body;
-    if (!title || !Array.isArray(questions) || questions.length === 0) {
-        return res.status(400).json({ error: 'Title and Questions array are required' });
+    if (!title) {
+        return res.status(400).json({ error: 'Title is required' });
     }
 
-    db.run(`INSERT INTO exams (teacher_id, title) VALUES (?, ?)`, [req.user.id, title], function(err) {
+    let parsedQuestions = [];
+    try {
+        parsedQuestions = typeof questions === 'string' ? JSON.parse(questions) : questions;
+    } catch (e) {
+        return res.status(400).json({ error: 'Invalid questions JSON format' });
+    }
+
+    if (!Array.isArray(parsedQuestions) || parsedQuestions.length === 0) {
+        return res.status(400).json({ error: 'Questions list is empty' });
+    }
+
+    const notesFilename = req.file ? req.file.filename : null;
+    const notesPath = req.file ? req.file.path : null;
+
+    db.run(`INSERT INTO exams (teacher_id, title, notes_file) VALUES (?, ?, ?)`, [req.user.id, title, notesFilename], function(err) {
         if (err) return res.status(500).json({ error: 'Database error creating exam' });
         
         const examId = this.lastID;
         let completed = 0;
-        let errors = false;
+        let dbErrors = false;
 
         db.serialize(() => {
             const stmt = db.prepare(`INSERT INTO questions (exam_id, teacher_id, question_text, model_answer) VALUES (?, ?, ?, ?)`);
             
-            for (const q of questions) {
-                stmt.run([examId, req.user.id, q.question_text, q.model_answer], (err) => {
-                    if (err) errors = true;
+            for (const q of parsedQuestions) {
+                stmt.run([examId, req.user.id, q.question_text, q.model_answer || ''], (err) => {
+                    if (err) dbErrors = true;
                     completed++;
-                    if (completed === questions.length) {
-                        if (errors) {
-                            res.status(500).json({ error: 'Partial success or database error' });
+                    
+                    if (completed === parsedQuestions.length) {
+                        if (dbErrors) {
+                            return res.status(500).json({ error: 'Database error inserting questions' });
+                        }
+                        
+                        if (notesPath) {
+                            // Notify AI service to index notes
+                            fetch('http://127.0.0.1:8000/index-notes', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                signal: AbortSignal.timeout(300000),
+                                body: JSON.stringify({
+                                    exam_id: examId,
+                                    notes_path: notesPath
+                                })
+                            })
+                            .then(async (aiRes) => {
+                                const errText = await aiRes.text();
+                                let data;
+                                try {
+                                    data = JSON.parse(errText);
+                                } catch (e) {}
+                                if (!aiRes.ok) {
+                                    throw new Error(data?.error || 'AI Service indexing failed');
+                                }
+                                return data;
+                            })
+                            .then(() => {
+                                res.status(201).json({ message: 'Exam created and notes indexed successfully', examId });
+                            })
+                            .catch((aiErr) => {
+                                console.error(aiErr);
+                                res.status(400).json({ error: aiErr.message || 'Exam created, but AI failed to index notes.' });
+                            });
                         } else {
                             res.status(201).json({ message: 'Exams uploaded successfully', examId });
                         }
+                    }
+                });
+            }
+            stmt.finalize();
+        });
+    });
+});
+
+app.post('/api/exams/create-with-notes', authenticate, upload.single('notes'), (req, res) => {
+    if (req.user.role !== 'teacher') return res.status(403).json({ error: 'Forbidden' });
+    
+    const { title, questions } = req.body;
+    if (!title || !req.file) {
+        return res.status(400).json({ error: 'Title and Unit Notes file are required' });
+    }
+
+    let parsedQuestions = [];
+    try {
+        parsedQuestions = JSON.parse(questions || '[]');
+    } catch (e) {
+        return res.status(400).json({ error: 'Invalid questions JSON format' });
+    }
+
+    if (!Array.isArray(parsedQuestions) || parsedQuestions.length === 0) {
+        return res.status(400).json({ error: 'At least one question is required' });
+    }
+
+    const notesFilename = req.file.filename;
+    const notesPath = req.file.path;
+
+    db.run(`INSERT INTO exams (teacher_id, title, notes_file) VALUES (?, ?, ?)`, [req.user.id, title, notesFilename], function(err) {
+        if (err) return res.status(500).json({ error: 'Database error creating exam' });
+        
+        const examId = this.lastID;
+        let completed = 0;
+        let dbErrors = false;
+        
+        db.serialize(() => {
+            const stmt = db.prepare(`INSERT INTO questions (exam_id, teacher_id, question_text, model_answer) VALUES (?, ?, ?, ?)`);
+            
+            for (const q of parsedQuestions) {
+                stmt.run([examId, req.user.id, q.question_text, ''], (err) => {
+                    if (err) dbErrors = true;
+                    completed++;
+                    
+                    if (completed === parsedQuestions.length) {
+                        if (dbErrors) {
+                            return res.status(500).json({ error: 'Database error inserting questions' });
+                        }
+                        
+                        // Notify Python AI service to clean, chunk, embed, and index notes
+                        fetch('http://127.0.0.1:8000/index-notes', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            signal: AbortSignal.timeout(300000),
+                            body: JSON.stringify({
+                                exam_id: examId,
+                                notes_path: notesPath
+                            })
+                        })
+                        .then(async (aiRes) => {
+                            const errText = await aiRes.text();
+                            let data;
+                            try {
+                                data = JSON.parse(errText);
+                            } catch (e) {}
+                            if (!aiRes.ok) {
+                                throw new Error(data?.error || 'AI Service indexing failed');
+                            }
+                            return data;
+                        })
+                        .then((aiData) => {
+                            res.status(201).json({ message: 'Exam created and unit notes indexed successfully', examId });
+                        })
+                        .catch((aiErr) => {
+                            console.error("AI Service Indexing Error:", aiErr.message);
+                            res.status(400).json({ error: aiErr.message || 'Exam created, but AI failed to index unit notes.' });
+                        });
                     }
                 });
             }
@@ -186,12 +353,91 @@ app.delete('/api/exams/:id', authenticate, (req, res) => {
     });
 });
 
-app.put('/api/exams/:id', authenticate, (req, res) => {
+app.put('/api/exams/:id', authenticate, upload.single('notes'), (req, res) => {
     if (req.user.role !== 'teacher') return res.status(403).json({ error: 'Forbidden' });
     const { title } = req.body;
-    db.run(`UPDATE exams SET title = ? WHERE id = ? AND teacher_id = ?`, [title, req.params.id, req.user.id], function(err) {
-        if (err) return res.status(500).json({ error: 'Database error' });
-        res.json({ message: 'Exam updated successfully' });
+    const examId = req.params.id;
+
+    if (req.file) {
+        const notesFilename = req.file.filename;
+        const notesPath = req.file.path;
+
+        db.run(`UPDATE exams SET title = ?, notes_file = ? WHERE id = ? AND teacher_id = ?`, 
+            [title, notesFilename, examId, req.user.id], 
+            function(err) {
+                if (err) return res.status(500).json({ error: 'Database error updating exam notes' });
+
+                // Notify AI service to clean, chunk, embed and index notes
+                fetch('http://127.0.0.1:8000/index-notes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        exam_id: parseInt(examId),
+                        notes_path: notesPath
+                    })
+                })
+                .then(async (aiRes) => {
+                    const errText = await aiRes.text();
+                    let data;
+                    try {
+                        data = JSON.parse(errText);
+                    } catch (e) {}
+                    if (!aiRes.ok) {
+                        throw new Error(data?.error || 'AI Service indexing failed');
+                    }
+                    return data;
+                })
+                .then((aiData) => {
+                    res.json({ message: 'Exam and notes updated and indexed successfully' });
+                })
+                .catch((aiErr) => {
+                    console.error("AI Service Indexing Error during edit:", aiErr.message);
+                    res.status(400).json({ error: aiErr.message || 'Exam updated, but AI failed to index new notes.' });
+                });
+            }
+        );
+    } else {
+        db.run(`UPDATE exams SET title = ? WHERE id = ? AND teacher_id = ?`, [title, examId, req.user.id], function(err) {
+            if (err) return res.status(500).json({ error: 'Database error' });
+            res.json({ message: 'Exam updated successfully' });
+        });
+    }
+});
+
+app.post('/api/exams/:id/reindex', authenticate, (req, res) => {
+    if (req.user.role !== 'teacher') return res.status(403).json({ error: 'Forbidden' });
+    
+    const examId = req.params.id;
+    db.get(`SELECT * FROM exams WHERE id = ? AND IFNULL(is_deleted, 0) = 0`, [examId], (err, exam) => {
+        if (err || !exam) return res.status(404).json({ error: 'Exam not found' });
+        if (!exam.notes_file) return res.status(400).json({ error: 'No unit notes file associated with this exam' });
+        
+        const notesPath = path.join(uploadsDir, exam.notes_file);
+        
+        fetch('http://127.0.0.1:8000/index-notes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                exam_id: parseInt(examId),
+                notes_path: notesPath
+            })
+        })
+        .then(async (aiRes) => {
+            const errText = await aiRes.text();
+            let data;
+            try { data = JSON.parse(errText); } catch (e) {}
+            if (!aiRes.ok) {
+                throw new Error(data?.error || 'AI Service indexing failed');
+            }
+            return data;
+        })
+        .then((aiData) => {
+            res.json({ message: 'Exam notes re-indexed successfully', chunks: aiData.chunks_count });
+        })
+        .catch((aiErr) => {
+            console.error(aiErr);
+            res.status(400).json({ error: aiErr.message || 'AI failed to index unit notes.' });
+        });
     });
 });
 
@@ -224,59 +470,69 @@ app.post('/api/exams/:id/submit', authenticate, async (req, res) => {
         return res.status(400).json({ error: 'Answers array is required' });
     }
 
-    db.all(`SELECT * FROM questions WHERE exam_id = ?`, [examId], async (err, questions) => {
-        if (err || !questions.length) return res.status(404).json({ error: 'Exam or questions not found' });
+    db.get(`SELECT * FROM exams WHERE id = ?`, [examId], (err, exam) => {
+        if (err || !exam) return res.status(404).json({ error: 'Exam not found' });
 
-        const results = [];
-        let errorsOccurred = false;
+        const notesPath = exam.notes_file ? path.join(uploadsDir, exam.notes_file) : null;
 
-        for (const answerData of answers) {
-            const question = questions.find(q => q.id === answerData.question_id);
-            if (!question) continue;
+        db.all(`SELECT * FROM questions WHERE exam_id = ?`, [examId], async (err, questions) => {
+            if (err || !questions.length) return res.status(404).json({ error: 'Exam or questions not found' });
 
-            try {
-                const aiResponse = await fetch('http://127.0.0.1:8000/evaluate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        question: question.question_text,
-                        model_answer: question.model_answer,
-                        student_answer: answerData.student_answer
-                    })
-                });
-                const evaluation = await aiResponse.json();
+            const results = [];
+            let errorsOccurred = false;
 
-                await new Promise((resolve, reject) => {
-                    db.run(`INSERT INTO submissions (student_id, question_id, student_answer, percentage, marks, result, semantic_score, keyword_score, grammar_score, feedback)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                        [
-                            req.user.id, question.id, answerData.student_answer,
-                            evaluation.percentage, evaluation.marks, evaluation.result,
-                            evaluation.semantic_score, evaluation.keyword_score, evaluation.grammar_score,
-                            JSON.stringify(evaluation.feedback)
-                        ],
-                        function (err) {
-                            if (err) {
-                                errorsOccurred = true;
-                                reject(err);
-                            } else {
-                                results.push({ question_id: question.id, submission_id: this.lastID, evaluation });
-                                resolve();
+            for (const answerData of answers) {
+                const question = questions.find(q => q.id === answerData.question_id);
+                if (!question) continue;
+
+                try {
+                    const aiResponse = await fetch('http://127.0.0.1:8000/evaluate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        signal: AbortSignal.timeout(300000),
+                        body: JSON.stringify({
+                            exam_id: parseInt(examId),
+                            question: question.question_text,
+                            student_answer: answerData.student_answer,
+                            model_answer: question.model_answer,
+                            notes_path: notesPath
+                        })
+                    });
+                    const evaluation = await aiResponse.json();
+                    const referenceAnswer = evaluation.reference_answer || '';
+
+                    await new Promise((resolve, reject) => {
+                        db.run(`INSERT INTO submissions (student_id, question_id, student_answer, percentage, marks, result, semantic_score, keyword_score, grammar_score, feedback, reference_answer)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                            [
+                                req.user.id, question.id, answerData.student_answer,
+                                evaluation.percentage, evaluation.marks, evaluation.result,
+                                evaluation.semantic_score, evaluation.keyword_score, evaluation.grammar_score,
+                                JSON.stringify(evaluation.feedback), referenceAnswer
+                            ],
+                            function (err) {
+                                if (err) {
+                                    errorsOccurred = true;
+                                    reject(err);
+                                } else {
+                                    results.push({ question_id: question.id, submission_id: this.lastID, evaluation });
+                                    resolve();
+                                }
                             }
-                        }
-                    );
-                }).catch(e => console.error(e));
-            } catch (error) {
-                console.error("AI Service Error:", error);
-                errorsOccurred = true;
+                        );
+                    }).catch(e => console.error(e));
+                } catch (error) {
+                    console.error("AI Service Error:", error);
+                    errorsOccurred = true;
+                }
             }
-        }
 
-        if (results.length === 0 && errorsOccurred) {
-             return res.status(500).json({ error: 'Failed to evaluate any answers. Ensure AI service is running.' });
-        }
-        
-        res.status(201).json({ message: 'Exam submitted successfully', results });
+            if (results.length === 0 && errorsOccurred) {
+                 return res.status(500).json({ error: 'Failed to evaluate any answers. Ensure AI service is running.' });
+            }
+            
+            res.status(201).json({ message: 'Exam submitted successfully', results });
+        });
     });
 });
 
@@ -308,7 +564,51 @@ app.get('/api/submissions', authenticate, (req, res) => {
     }
 });
 
+app.delete('/api/submissions/:id', authenticate, (req, res) => {
+    if (req.user.role !== 'teacher') return res.status(403).json({ error: 'Forbidden' });
+
+    const submissionId = parseInt(req.params.id, 10);
+    if (isNaN(submissionId)) {
+        return res.status(400).json({ error: 'Invalid submission ID' });
+    }
+
+    // Check if submission exists
+    db.get('SELECT * FROM submissions WHERE id = ?', [submissionId], (err, row) => {
+        if (err) {
+            console.error('Database error checking submission:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+        if (!row) {
+            return res.status(404).json({ error: 'Submission not found' });
+        }
+
+        // Delete the submission
+        db.run('DELETE FROM submissions WHERE id = ?', [submissionId], function(err) {
+            if (err) {
+                console.error('Database error deleting submission:', err);
+                return res.status(500).json({ error: 'Database error' });
+            }
+            res.json({ message: 'Submission deleted successfully' });
+        });
+    });
+});
+
 const PORT = 5000;
 app.listen(PORT, () => {
     console.log(`Backend server running on port ${PORT}`);
+    
+    // Trigger auto-indexing of unit notes on startup
+    console.log("Triggering auto-indexing of all existing unit notes...");
+    fetch('http://127.0.0.1:8000/auto-index-all', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(300000)
+    })
+    .then(res => res.json())
+    .then(data => {
+        console.log("Startup Auto-Indexing Response:", data);
+    })
+    .catch(err => {
+        console.error("Startup Auto-Indexing Error:", err.message);
+    });
 });

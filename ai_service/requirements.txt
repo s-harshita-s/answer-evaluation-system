@@ -2,3 +2,8 @@ flask
 flask-cors
 sentence-transformers
 language-tool-python
+faiss-cpu
+pypdf
+python-docx
+google-generativeai
+python-dotenv
