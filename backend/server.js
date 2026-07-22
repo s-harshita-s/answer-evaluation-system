@@ -45,7 +45,7 @@ app.post('/api/auth/register', async (req, res) => {
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
         db.run(`INSERT INTO users (name, email, password, role, roll_number, semester) VALUES (?, ?, ?, ?, ?, ?)`,
-            [name, email, hashedPassword, role, roll_number || null, semester || null],
+            [name, email.toLowerCase(), hashedPassword, role, roll_number || null, semester || null],
             function (err) {
                 if (err) {
                     if (err.message.includes('UNIQUE')) {
@@ -63,7 +63,7 @@ app.post('/api/auth/register', async (req, res) => {
 
 app.post('/api/auth/login', (req, res) => {
     const { email, password } = req.body;
-    db.get(`SELECT * FROM users WHERE email = ?`, [email], async (err, user) => {
+    db.get(`SELECT * FROM users WHERE email = ?`, [email.toLowerCase()], async (err, user) => {
         if (err) return res.status(500).json({ error: 'Database error' });
         if (!user) return res.status(401).json({ error: 'Invalid email or password' });
 
