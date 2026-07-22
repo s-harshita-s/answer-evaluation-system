@@ -305,22 +305,39 @@ def index_notes():
 
 @app.route('/auto-index-all', methods=['POST'])
 def auto_index_all():
-    """Scan backend uploads and SQLite database for active exams and index their unit notes if missing."""
-    import sqlite3
+    """Scan backend uploads and database for active exams and index their unit notes if missing."""
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # project root
-    db_path = os.path.join(project_root, 'backend', 'database.sqlite')
     uploads_dir = os.path.join(project_root, 'backend', 'uploads')
     
-    if not os.path.exists(db_path):
-        return jsonify({"error": f"Database not found at {db_path}"}), 404
-        
+    data = request.json or {}
+    exams_payload = data.get('exams', None)
+    
+    active_exams = []
+    if exams_payload is not None:
+        # Load from payload
+        for exam in exams_payload:
+            if isinstance(exam, dict):
+                active_exams.append((exam.get('id'), exam.get('title'), exam.get('notes_file')))
+            elif isinstance(exam, (list, tuple)) and len(exam) >= 3:
+                active_exams.append((exam[0], exam[1], exam[2]))
+    else:
+        # Fallback to local SQLite database queries for backwards compatibility
+        import sqlite3
+        db_path = os.path.join(project_root, 'backend', 'database.sqlite')
+        if not os.path.exists(db_path):
+            return jsonify({"error": f"Database not found at {db_path}"}), 404
+            
+        try:
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, title, notes_file FROM exams WHERE COALESCE(is_deleted, 0) = 0 AND notes_file IS NOT NULL AND notes_file != ''")
+            active_exams = cursor.fetchall()
+            conn.close()
+        except Exception as e:
+            print(f"Error querying SQLite database: {e}")
+            return jsonify({"error": f"Database error: {str(e)}"}), 500
+            
     try:
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, title, notes_file FROM exams WHERE IFNULL(is_deleted, 0) = 0 AND notes_file IS NOT NULL AND notes_file != ''")
-        active_exams = cursor.fetchall()
-        conn.close()
-        
         results = []
         indexed_count = 0
         for exam_id, title, notes_file in active_exams:

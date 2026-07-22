@@ -599,16 +599,23 @@ app.listen(PORT, () => {
     
     // Trigger auto-indexing of unit notes on startup
     console.log("Triggering auto-indexing of all existing unit notes...");
-    fetch('http://127.0.0.1:8000/auto-index-all', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: AbortSignal.timeout(300000)
-    })
-    .then(res => res.json())
-    .then(data => {
-        console.log("Startup Auto-Indexing Response:", data);
-    })
-    .catch(err => {
-        console.error("Startup Auto-Indexing Error:", err.message);
+    db.all(`SELECT id, title, notes_file FROM exams WHERE COALESCE(is_deleted, 0) = 0 AND notes_file IS NOT NULL AND notes_file != ''`, [], (err, rows) => {
+        if (err) {
+            console.error("Failed to query exams for auto-indexing:", err.message);
+            return;
+        }
+        fetch('http://127.0.0.1:8000/auto-index-all', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ exams: rows }),
+            signal: AbortSignal.timeout(300000)
+        })
+        .then(res => res.json())
+        .then(data => {
+            console.log("Startup Auto-Indexing Response:", data);
+        })
+        .catch(err => {
+            console.error("Startup Auto-Indexing Error:", err.message);
+        });
     });
 });
