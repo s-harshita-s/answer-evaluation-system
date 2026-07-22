@@ -27,6 +27,13 @@ function convertSql(sql) {
     return pgSql;
 }
 
+function standardizeError(err) {
+    if (err && err.code === '23505') {
+        err.message = 'UNIQUE constraint failed: ' + (err.detail || '');
+    }
+    return err;
+}
+
 const db = {
     run(sql, params, callback) {
         if (typeof params === 'function') {
@@ -41,7 +48,7 @@ const db = {
                     lastID: res && res.rows && res.rows[0] ? res.rows[0].id : null,
                     changes: res ? res.rowCount : 0
                 };
-                callback.call(context, err);
+                callback.call(context, standardizeError(err));
             }
         });
     },
@@ -54,7 +61,7 @@ const db = {
         const pgSql = convertSql(sql);
         pool.query(pgSql, params, (err, res) => {
             if (callback) {
-                callback(err, res && res.rows && res.rows.length > 0 ? res.rows[0] : null);
+                callback(standardizeError(err), res && res.rows && res.rows.length > 0 ? res.rows[0] : null);
             }
         });
     },
@@ -67,7 +74,7 @@ const db = {
         const pgSql = convertSql(sql);
         pool.query(pgSql, params, (err, res) => {
             if (callback) {
-                callback(err, res && res.rows ? res.rows : []);
+                callback(standardizeError(err), res && res.rows ? res.rows : []);
             }
         });
     },
@@ -89,7 +96,7 @@ const db = {
                             lastID: res && res.rows && res.rows[0] ? res.rows[0].id : null,
                             changes: res ? res.rowCount : 0
                         };
-                        callback.call(context, err);
+                        callback.call(context, standardizeError(err));
                     }
                 });
             },
