@@ -1,15 +1,26 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { LogOut, Plus, Users, BookOpen } from 'lucide-react';
+import { LogOut, Plus, Users, BookOpen, Trash2, Upload, FileText } from 'lucide-react';
 
 export default function TeacherDashboard() {
   const [exams, setExams] = useState([]);
   const [submissions, setSubmissions] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
-  const [newQ, setNewQ] = useState({ question_text: '', model_answer: '' });
+  
+  // Deletion UI states
+  const [deletingId, setDeletingId] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [toastMessage, setToastMessage] = useState('');
+  
+  // Notes and multiple questions creation states
+  const [examTitle, setExamTitle] = useState('');
+  const [notesFile, setNotesFile] = useState(null);
+  const [questionsList, setQuestionsList] = useState(['']);
+
   const [uploadData, setUploadData] = useState({ title: '', questions: '', answers: '' });
+  const [bulkNotesFile, setBulkNotesFile] = useState(null);
   const navigate = useNavigate();
   const userName = localStorage.getItem('name');
 
@@ -34,41 +45,97 @@ export default function TeacherDashboard() {
     }
   };
 
+  const handleDelete = async (id) => {
+    setConfirmDeleteId(null);
+    setDeletingId(id);
+    const token = localStorage.getItem('token');
+    try {
+      await axios.delete(`http://localhost:5000/api/submissions/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      // Update local React state to remove submission immediately
+      setSubmissions(prev => prev.filter(sub => sub.id !== id));
+      // Show success toast
+      setToastMessage('Submission deleted successfully.');
+      setTimeout(() => setToastMessage(''), 3000);
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.error || "Failed to delete submission.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const handleLogout = () => {
     localStorage.clear();
     navigate('/');
   };
 
-  const handleCreateQuestion = async (e) => {
+  const handleQuestionChange = (index, value) => {
+    const list = [...questionsList];
+    list[index] = value;
+    setQuestionsList(list);
+  };
+
+  const addQuestionField = () => {
+    setQuestionsList([...questionsList, '']);
+  };
+
+  const removeQuestionField = (index) => {
+    if (questionsList.length <= 1) return;
+    const list = [...questionsList];
+    list.splice(index, 1);
+    setQuestionsList(list);
+  };
+
+  const handleCreateExamWithNotes = async (e) => {
     e.preventDefault();
+    if (!examTitle.trim()) return alert("Please enter an Exam Title.");
+    if (!notesFile) return alert("Please select a Unit Notes file.");
+    if (questionsList.some(q => !q.trim())) return alert("Please fill out or remove all empty questions.");
+
     const token = localStorage.getItem('token');
+    const formattedQuestions = questionsList.map(q => ({ question_text: q }));
+
+    const formData = new FormData();
+    formData.append('title', examTitle);
+    formData.append('notes', notesFile);
+    formData.append('questions', JSON.stringify(formattedQuestions));
+
     try {
-      await axios.post('http://localhost:5000/api/questions', newQ, {
-        headers: { Authorization: `Bearer ${token}` }
+      const res = await axios.post('http://localhost:5000/api/exams/create-with-notes', formData, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
       });
       setShowAdd(false);
-      setNewQ({ question_text: '', model_answer: '' });
-      fetchData();
+      setExamTitle('');
+      setNotesFile(null);
+      setQuestionsList(['']);
+      navigate('/teacher/exams', { state: { openExamId: res.data?.examId } });
     } catch (err) {
       console.error(err);
+      alert(err.response?.data?.error || "Failed to create exam.");
     }
   };
 
   const handleUpload = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem('token');
+    if (!uploadData.title.trim()) return alert("Please enter an Exam Title.");
     
-    try {
-      const qLines = uploadData.questions.split('\n').filter(l => l.trim());
-      const aLines = uploadData.answers.split('\n').filter(l => l.trim());
-      
+    const qLines = uploadData.questions.split('\n').filter(l => l.trim());
+    const aLines = uploadData.answers ? uploadData.answers.split('\n').filter(l => l.trim()) : [];
+    
+    const parsedQuestions = [];
+    
+    if (aLines.length > 0) {
       const qMap = {};
       qLines.forEach(l => {
         const match = l.match(/^(\d+),\s*(.*)$/);
         if (match) qMap[match[1]] = match[2];
       });
 
-      const parsedQuestions = [];
       aLines.forEach(l => {
         const match = l.match(/^(\d+),\s*(.*)$/);
         if (match && qMap[match[1]]) {
@@ -78,26 +145,55 @@ export default function TeacherDashboard() {
           });
         }
       });
+    } else {
+      qLines.forEach(l => {
+        const match = l.match(/^(\d+),\s*(.*)$/);
+        if (match) {
+          parsedQuestions.push({
+            question_text: match[2],
+            model_answer: ''
+          });
+        } else {
+          parsedQuestions.push({
+            question_text: l,
+            model_answer: ''
+          });
+        }
+      });
+    }
 
-      if (parsedQuestions.length === 0) {
-        alert("Could not parse any matching questions and answers. Ensure they start with numbers like '1, question'.");
-        return;
-      }
+    if (parsedQuestions.length === 0) {
+      alert("Could not parse any questions. Ensure they are listed correctly.");
+      return;
+    }
 
-      if (!uploadData.title.trim()) {
-        alert("Please enter an Exam Title.");
-        return;
-      }
+    if (!bulkNotesFile && aLines.length === 0) {
+      alert("You must upload a Unit Notes file if no model answers are provided.");
+      return;
+    }
 
-      await axios.post('http://localhost:5000/api/questions/upload', { title: uploadData.title, questions: parsedQuestions }, {
-        headers: { Authorization: `Bearer ${token}` }
+    const token = localStorage.getItem('token');
+    const formData = new FormData();
+    formData.append('title', uploadData.title);
+    formData.append('questions', JSON.stringify(parsedQuestions));
+    if (bulkNotesFile) {
+      formData.append('notes', bulkNotesFile);
+    }
+
+    try {
+      const res = await axios.post('http://localhost:5000/api/questions/upload', formData, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
       });
       setShowUpload(false);
       setUploadData({ title: '', questions: '', answers: '' });
-      fetchData();
+      setBulkNotesFile(null);
+      navigate('/teacher/exams', { state: { openExamId: res.data?.examId } });
     } catch (err) {
       console.error(err);
-      alert("Error uploading exams.");
+      alert(err.response?.data?.error || "Error uploading exams.");
     }
   };
 
@@ -159,29 +255,79 @@ export default function TeacherDashboard() {
       </div>
 
       {showAdd && (
-        <form onSubmit={handleCreateQuestion} className="glass-panel" style={{ padding: '24px', marginBottom: '30px' }}>
-          <h4 style={{ marginBottom: '15px' }}>New Question / Exam</h4>
-          <textarea
-            className="input-field"
-            placeholder="Enter Question Text"
-            value={newQ.question_text}
-            onChange={(e) => setNewQ({...newQ, question_text: e.target.value})}
-            required
-            rows={3}
-            style={{ marginBottom: '15px', resize: 'vertical' }}
-          />
-          <textarea
-            className="input-field"
-            placeholder="Enter Model Answer (used by AI for grading)"
-            value={newQ.model_answer}
-            onChange={(e) => setNewQ({...newQ, model_answer: e.target.value})}
-            required
-            rows={4}
-            style={{ marginBottom: '15px', resize: 'vertical' }}
-          />
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button type="submit" className="btn-primary" style={{ padding: '10px 20px' }}>Save Exam</button>
-            <button type="button" onClick={() => setShowAdd(false)} className="btn-secondary" style={{ padding: '10px 20px' }}>Cancel</button>
+        <form onSubmit={handleCreateExamWithNotes} className="glass-panel" style={{ padding: '28px', marginBottom: '30px', border: '1px solid rgba(0,0,0,0.05)' }}>
+          <h4 style={{ marginBottom: '20px', fontSize: '1.4rem', fontWeight: '600' }}>Create Exam with Unit Notes</h4>
+          
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.95rem' }}>Exam Title</label>
+            <input
+              type="text"
+              className="input-field"
+              placeholder="e.g. Physics Unit 2 Midterm"
+              value={examTitle}
+              onChange={(e) => setExamTitle(e.target.value)}
+              required
+              style={{ padding: '12px' }}
+            />
+          </div>
+
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.95rem' }}>Upload Unit Notes (PDF, DOCX, TXT)</label>
+            <div style={{ position: 'relative', border: '2px dashed #cbd5e1', borderRadius: '12px', padding: '20px', textAlign: 'center', cursor: 'pointer', background: 'rgba(0,0,0,0.01)' }}>
+              <input
+                type="file"
+                accept=".pdf,.docx,.txt"
+                onChange={(e) => setNotesFile(e.target.files[0])}
+                required
+                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
+              />
+              <Upload size={32} color="#3b82f6" style={{ margin: '0 auto 10px auto', display: 'block' }} />
+              {notesFile ? (
+                <p style={{ margin: 0, color: '#1e293b', fontWeight: '500' }}>{notesFile.name} ({(notesFile.size / 1024 / 1024).toFixed(2)} MB)</p>
+              ) : (
+                <p style={{ margin: 0, color: '#64748b' }}>Drag & drop or click to upload PDF, DOCX or TXT file</p>
+              )}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '25px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <label style={{ fontWeight: 600, fontSize: '0.95rem' }}>Exam Questions</label>
+              <button type="button" onClick={addQuestionField} className="btn-secondary" style={{ padding: '6px 12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+                <Plus size={14} /> Add Question
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {questionsList.map((q, idx) => (
+                <div key={idx} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <span style={{ fontWeight: '600', color: '#64748b', width: '25px' }}>Q{idx + 1}:</span>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder={`Enter question ${idx + 1}`}
+                    value={q}
+                    onChange={(e) => handleQuestionChange(idx, e.target.value)}
+                    required
+                    style={{ flex: 1, padding: '10px' }}
+                  />
+                  {questionsList.length > 1 && (
+                    <button type="button" onClick={() => removeQuestionField(idx)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '5px' }}>
+                      <Trash2 size={20} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button type="submit" className="btn-primary" style={{ padding: '10px 24px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+              Create & Index Notes
+            </button>
+            <button type="button" onClick={() => { setShowAdd(false); setQuestionsList(['']); setExamTitle(''); setNotesFile(null); }} className="btn-secondary" style={{ padding: '10px 24px', cursor: 'pointer' }}>
+              Cancel
+            </button>
           </div>
         </form>
       )}
@@ -198,7 +344,16 @@ export default function TeacherDashboard() {
             required
             style={{ marginBottom: '15px' }}
           />
-          <p style={{ color: 'var(--text-muted)', marginBottom: '15px', fontSize: '0.9rem' }}>Format: <code>1, question text</code> in the first box and <code>1, answer text</code> in the second box.</p>
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600 }}>Upload Unit Notes (Required if no model answers are provided)</label>
+            <input 
+              type="file" 
+              accept=".pdf,.docx,.txt"
+              onChange={(e) => setBulkNotesFile(e.target.files[0])}
+              style={{ fontSize: '0.9rem' }}
+            />
+          </div>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '15px', fontSize: '0.9rem' }}>Format: <code>1, question text</code> in the first box and optional matching numbers <code>1, answer text</code> in the second box.</p>
           <div className="flex-col-mobile" style={{ display: 'flex', gap: '20px', marginBottom: '15px' }}>
             <div style={{ flex: 1 }}>
               <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600 }}>Questions</label>
@@ -213,13 +368,12 @@ export default function TeacherDashboard() {
               />
             </div>
             <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600 }}>Model Answers</label>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600 }}>Model Answers (Optional if unit notes are uploaded)</label>
               <textarea
                 className="input-field"
                 placeholder="1, Inheritance is when child class inherits...&#10;2, Branch of AI..."
                 value={uploadData.answers}
                 onChange={(e) => setUploadData({...uploadData, answers: e.target.value})}
-                required
                 rows={6}
                 style={{ resize: 'vertical' }}
               />
@@ -244,6 +398,7 @@ export default function TeacherDashboard() {
                 <th style={{ padding: '15px 20px' }}>Exam / Question</th>
                 <th style={{ padding: '15px 20px' }}>Score</th>
                 <th style={{ padding: '15px 20px' }}>Result</th>
+                <th style={{ padding: '15px 20px', textAlign: 'center' }}>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -268,15 +423,132 @@ export default function TeacherDashboard() {
                     </span>
                   </td>
                   <td style={{ padding: '15px 20px' }}>{sub.result}</td>
+                  <td style={{ padding: '15px 20px', textAlign: 'center' }}>
+                    <button
+                      onClick={() => setConfirmDeleteId(sub.id)}
+                      disabled={deletingId !== null}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: deletingId === sub.id ? '#9ca3af' : '#ef4444',
+                        cursor: deletingId !== null ? 'not-allowed' : 'pointer',
+                        padding: '5px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'color 0.2s, transform 0.1s'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (deletingId === null) e.currentTarget.style.transform = 'scale(1.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'scale(1)';
+                      }}
+                      title="Delete Submission"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </td>
                 </tr>
               ))}
               {submissions.length === 0 && (
-                <tr><td colSpan="6" style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>No submissions yet.</td></tr>
+                <tr><td colSpan="7" style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>No submissions yet.</td></tr>
               )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Custom Confirmation Modal */}
+      {confirmDeleteId !== null && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: 'rgba(15, 23, 42, 0.3)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          animation: 'fadeIn 0.2s ease-out'
+        }}>
+          <div className="glass-panel" style={{
+            padding: '30px',
+            maxWidth: '450px',
+            width: '95%',
+            textAlign: 'center',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            animation: 'scaleUp 0.2s ease-out'
+          }}>
+            <div style={{
+              background: '#fee2e2',
+              color: '#ef4444',
+              width: '50px',
+              height: '50px',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 20px auto'
+            }}>
+              <Trash2 size={24} />
+            </div>
+            <h4 style={{ margin: '0 0 10px 0', fontSize: '1.25rem', fontWeight: 600, color: '#1e293b' }}>Delete Submission</h4>
+            <p style={{ margin: '0 0 25px 0', color: '#64748b', fontSize: '0.95rem', lineHeight: '1.5' }}>
+              Are you sure you want to delete this submission? This action cannot be undone.
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button 
+                onClick={() => setConfirmDeleteId(null)}
+                className="btn-secondary" 
+                style={{ padding: '10px 20px', minWidth: '100px', cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => handleDelete(confirmDeleteId)}
+                className="btn-primary" 
+                style={{ 
+                  padding: '10px 20px', 
+                  minWidth: '100px', 
+                  background: '#ef4444', 
+                  borderColor: '#ef4444',
+                  color: 'white',
+                  cursor: 'pointer'
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Success Toast */}
+      {toastMessage && (
+        <div style={{
+          position: 'fixed',
+          bottom: '30px',
+          right: '30px',
+          background: '#10b981',
+          color: 'white',
+          padding: '12px 24px',
+          borderRadius: '8px',
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          fontWeight: 600,
+          zIndex: 9999,
+          animation: 'slideIn 0.3s ease-out'
+        }}>
+          <span>{toastMessage}</span>
+        </div>
+      )}
     </div>
   );
 }

@@ -108,8 +108,19 @@ export default function ResultView() {
             </span>
           </div>
 
-          <div style={{ background: 'rgba(0,0,0,0.02)', padding: '15px', borderRadius: '12px', border: '1px solid #eaeaea', marginBottom: '20px' }}>
-            <p style={{ margin: 0, color: '#444', fontStyle: 'italic' }}>"{sub.student_answer}"</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+            <div>
+              <h5 style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '8px', color: 'var(--text-muted)' }}>Your Answer:</h5>
+              <div style={{ background: 'rgba(0,0,0,0.02)', padding: '15px', borderRadius: '12px', border: '1px solid #eaeaea', height: 'calc(100% - 28px)', boxSizing: 'border-box' }}>
+                <p style={{ margin: 0, color: '#444', fontStyle: 'italic' }}>"{sub.student_answer}"</p>
+              </div>
+            </div>
+            <div>
+              <h5 style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '8px', color: 'var(--accent-blue)' }}>Evaluated Concept from Unit Notes (Basis of Evaluation):</h5>
+              <div style={{ background: '#eff6ff', padding: '15px', borderRadius: '12px', border: '1px solid #bfdbfe', height: 'calc(100% - 28px)', boxSizing: 'border-box' }}>
+                <p style={{ margin: 0, color: '#1e40af', lineHeight: '1.5' }}>{sub.reference_answer || 'No unit notes concept extracted.'}</p>
+              </div>
+            </div>
           </div>
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '20px' }}>

@@ -31,6 +31,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 teacher_id INTEGER,
                 title TEXT NOT NULL,
+                notes_file TEXT,
                 FOREIGN KEY (teacher_id) REFERENCES users (id)
             )`);
 
@@ -40,7 +41,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 exam_id INTEGER,
                 teacher_id INTEGER,
                 question_text TEXT NOT NULL,
-                model_answer TEXT NOT NULL,
+                model_answer TEXT,
                 FOREIGN KEY (teacher_id) REFERENCES users (id),
                 FOREIGN KEY (exam_id) REFERENCES exams (id)
             )`);
@@ -73,6 +74,9 @@ const db = new sqlite3.Database(dbPath, (err) => {
             // Add soft delete columns
             db.run(`ALTER TABLE exams ADD COLUMN is_deleted INTEGER DEFAULT 0`, (err) => {});
             db.run(`ALTER TABLE questions ADD COLUMN is_deleted INTEGER DEFAULT 0`, (err) => {});
+            
+            // Add notes_file column to exams (for existing databases)
+            db.run(`ALTER TABLE exams ADD COLUMN notes_file TEXT`, (err) => {});
 
             // Submissions table
             db.run(`CREATE TABLE IF NOT EXISTS submissions (
@@ -87,9 +91,13 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 keyword_score REAL,
                 grammar_score REAL,
                 feedback TEXT,
+                reference_answer TEXT,
                 FOREIGN KEY (student_id) REFERENCES users (id),
                 FOREIGN KEY (question_id) REFERENCES questions (id)
             )`);
+            
+            // Add reference_answer column to submissions (for existing databases)
+            db.run(`ALTER TABLE submissions ADD COLUMN reference_answer TEXT`, (err) => {});
         });
     }
 });

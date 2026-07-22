@@ -716,13 +716,33 @@ export default function StudentDashboard() {
                             display: 'flex',
                             flexDirection: 'column',
                             justifyContent: 'space-between',
-                            height: '200px'
+                            minHeight: '220px'
                           }}
                         >
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
-                            <h4 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#262626', margin: 0, lineHeight: 1.4 }}>
-                              {exam.title}
-                            </h4>
+                            <div>
+                              <h4 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#262626', margin: 0, lineHeight: 1.4 }}>
+                                {exam.title}
+                              </h4>
+                              {exam.notes_file ? (
+                                <div style={{ fontSize: '0.75rem', color: '#0284c7', background: '#E0F2FE', padding: '4px 10px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '8px', fontWeight: '600', width: 'fit-content' }}>
+                                  <span>📄 Notes: {exam.notes_file.split('-').slice(1).join('-')}</span>
+                                  <a 
+                                    href={"http://localhost:5000/uploads/" + exam.notes_file} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    style={{ textDecoration: 'underline', marginLeft: '4px', fontWeight: '700', color: '#0369a1' }}
+                                    onClick={e => e.stopPropagation()}
+                                  >
+                                    View
+                                  </a>
+                                </div>
+                              ) : (
+                                <div style={{ fontSize: '0.75rem', color: '#9A3412', background: '#FFEDD5', padding: '4px 10px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '8px', fontWeight: '600', width: 'fit-content' }}>
+                                  <span>⚠️ No Notes Attached</span>
+                                </div>
+                              )}
+                            </div>
                             {isEvaluated ? (
                               <span style={{ 
                                 background: '#EBFDF2', 
@@ -1165,9 +1185,29 @@ export default function StudentDashboard() {
                       >
                         <div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', marginBottom: '16px' }}>
-                            <h4 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#262626', margin: 0, lineHeight: 1.4 }}>
-                              {exam.title}
-                            </h4>
+                            <div>
+                              <h4 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#262626', margin: 0, lineHeight: 1.4 }}>
+                                {exam.title}
+                              </h4>
+                              {exam.notes_file ? (
+                                <div style={{ fontSize: '0.75rem', color: '#0284c7', background: '#E0F2FE', padding: '4px 10px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '8px', fontWeight: '600', width: 'fit-content' }}>
+                                  <span>📄 Notes: {exam.notes_file.split('-').slice(1).join('-')}</span>
+                                  <a 
+                                    href={"http://localhost:5000/uploads/" + exam.notes_file} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    style={{ textDecoration: 'underline', marginLeft: '4px', fontWeight: '700', color: '#0369a1' }}
+                                    onClick={e => e.stopPropagation()}
+                                  >
+                                    View
+                                  </a>
+                                </div>
+                              ) : (
+                                <div style={{ fontSize: '0.75rem', color: '#9A3412', background: '#FFEDD5', padding: '4px 10px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '8px', fontWeight: '600', width: 'fit-content' }}>
+                                  <span>⚠️ No Notes Attached</span>
+                                </div>
+                              )}
+                            </div>
                             {isEvaluated ? (
                               <span style={{ 
                                 background: '#EBFDF2', 
@@ -1298,9 +1338,29 @@ export default function StudentDashboard() {
                       >
                         <div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', marginBottom: '16px' }}>
-                            <h4 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#262626', margin: 0, lineHeight: 1.4 }}>
-                              {exam.title}
-                            </h4>
+                            <div>
+                              <h4 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#262626', margin: 0, lineHeight: 1.4 }}>
+                                {exam.title}
+                              </h4>
+                              {exam.notes_file ? (
+                                <div style={{ fontSize: '0.75rem', color: '#0284c7', background: '#E0F2FE', padding: '4px 10px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '8px', fontWeight: '600', width: 'fit-content' }}>
+                                  <span>📄 Notes: {exam.notes_file.split('-').slice(1).join('-')}</span>
+                                  <a 
+                                    href={"http://localhost:5000/uploads/" + exam.notes_file} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    style={{ textDecoration: 'underline', marginLeft: '4px', fontWeight: '700', color: '#0369a1' }}
+                                    onClick={e => e.stopPropagation()}
+                                  >
+                                    View
+                                  </a>
+                                </div>
+                              ) : (
+                                <div style={{ fontSize: '0.75rem', color: '#9A3412', background: '#FFEDD5', padding: '4px 10px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '8px', fontWeight: '600', width: 'fit-content' }}>
+                                  <span>⚠️ No Notes Attached</span>
+                                </div>
+                              )}
+                            </div>
                             <span style={{ 
                               background: '#EBFDF2', 
                               color: '#1E8538', 
