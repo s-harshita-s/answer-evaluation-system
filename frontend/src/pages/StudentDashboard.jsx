@@ -14,6 +14,7 @@ export default function StudentDashboard() {
   const [userName, setUserName] = useState(localStorage.getItem('name') || 'Student');
   const [rollNumber, setRollNumber] = useState(localStorage.getItem('roll_number') || 'N/A');
   const [semester, setSemester] = useState(localStorage.getItem('semester') || 'N/A');
+  const [activeTab, setActiveTab] = useState('dashboard');
   
   // Avatar states
   const [avatar, setAvatar] = useState(localStorage.getItem('avatar') || '');
@@ -63,6 +64,10 @@ export default function StudentDashboard() {
   const getSubmissionsForExam = (examId) => {
     return submissions.filter(s => s.exam_id === examId);
   };
+
+  const displayedExams = activeTab === 'dashboard' 
+    ? exams 
+    : exams.filter(exam => getSubmissionsForExam(exam.id).length > 0);
 
   return (
     <div className="dashboard-layout" style={{ display: 'flex', height: '100vh', width: '100%', backgroundColor: 'transparent', fontFamily: "'Inter', 'Poppins', sans-serif", overflow: 'hidden' }}>
@@ -228,20 +233,80 @@ export default function StudentDashboard() {
             <h3 style={{ color: '#888', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: '600', marginBottom: '16px' }}>Navigation</h3>
             
             <button 
-              onClick={() => navigate('/student-dashboard')}
-              style={{ width: '100%', padding: '16px', display: 'flex', alignItems: 'center', gap: '14px', background: location.pathname.includes('dashboard') ? 'linear-gradient(90deg, rgba(255,126,179,0.1), transparent)' : 'transparent', border: 'none', borderLeft: location.pathname.includes('dashboard') ? '4px solid var(--accent-pink)' : '4px solid transparent', color: location.pathname.includes('dashboard') ? 'var(--accent-pink)' : '#555', marginBottom: '8px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s', fontSize: '1.05rem', fontWeight: location.pathname.includes('dashboard') ? '700' : '500', borderRadius: '0 12px 12px 0' }}
+              onClick={() => setActiveTab('dashboard')}
+              style={{ 
+                width: '100%', 
+                padding: '16px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '14px', 
+                background: activeTab === 'dashboard' ? 'linear-gradient(90deg, rgba(255,126,179,0.1), transparent)' : 'transparent', 
+                border: 'none', 
+                borderLeft: activeTab === 'dashboard' ? '4px solid var(--accent-pink)' : '4px solid transparent', 
+                color: activeTab === 'dashboard' ? 'var(--accent-pink)' : '#555', 
+                marginBottom: '8px', 
+                cursor: 'pointer', 
+                textAlign: 'left', 
+                transition: 'all 0.2s', 
+                fontSize: '1.05rem', 
+                fontWeight: activeTab === 'dashboard' ? '700' : '500', 
+                borderRadius: '0 12px 12px 0' 
+              }}
+              onMouseEnter={(e) => { 
+                if (activeTab !== 'dashboard') {
+                  e.currentTarget.style.background = 'linear-gradient(90deg, rgba(255,126,179,0.05), transparent)'; 
+                  e.currentTarget.style.color = 'var(--accent-pink)'; 
+                  e.currentTarget.style.borderLeft = '4px solid rgba(255,126,179,0.5)'; 
+                }
+              }}
+              onMouseLeave={(e) => { 
+                if (activeTab !== 'dashboard') {
+                  e.currentTarget.style.background = 'transparent'; 
+                  e.currentTarget.style.color = '#555'; 
+                  e.currentTarget.style.borderLeft = '4px solid transparent'; 
+                }
+              }}
             >
-              <LayoutDashboard size={22} color={location.pathname.includes('dashboard') ? 'var(--accent-pink)' : '#888'} /> 
+              <LayoutDashboard size={22} color={activeTab === 'dashboard' ? 'var(--accent-pink)' : '#888'} /> 
               Dashboard
             </button>
 
             <button 
-              onClick={() => navigate('/my-results')} 
-              style={{ width: '100%', padding: '16px', display: 'flex', alignItems: 'center', gap: '14px', background: 'transparent', border: 'none', borderLeft: '4px solid transparent', color: '#555', marginBottom: '8px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s', fontSize: '1.05rem', fontWeight: '500', borderRadius: '0 12px 12px 0' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'linear-gradient(90deg, rgba(255,126,179,0.05), transparent)'; e.currentTarget.style.color = 'var(--accent-pink)'; e.currentTarget.style.borderLeft = '4px solid rgba(255,126,179,0.5)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#555'; e.currentTarget.style.borderLeft = '4px solid transparent'; }}
+              onClick={() => setActiveTab('results')} 
+              style={{ 
+                width: '100%', 
+                padding: '16px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '14px', 
+                background: activeTab === 'results' ? 'linear-gradient(90deg, rgba(255,126,179,0.1), transparent)' : 'transparent', 
+                border: 'none', 
+                borderLeft: activeTab === 'results' ? '4px solid var(--accent-pink)' : '4px solid transparent', 
+                color: activeTab === 'results' ? 'var(--accent-pink)' : '#555', 
+                marginBottom: '8px', 
+                cursor: 'pointer', 
+                textAlign: 'left', 
+                transition: 'all 0.2s', 
+                fontSize: '1.05rem', 
+                fontWeight: activeTab === 'results' ? '700' : '500', 
+                borderRadius: '0 12px 12px 0' 
+              }}
+              onMouseEnter={(e) => { 
+                if (activeTab !== 'results') {
+                  e.currentTarget.style.background = 'linear-gradient(90deg, rgba(255,126,179,0.05), transparent)'; 
+                  e.currentTarget.style.color = 'var(--accent-pink)'; 
+                  e.currentTarget.style.borderLeft = '4px solid rgba(255,126,179,0.5)'; 
+                }
+              }}
+              onMouseLeave={(e) => { 
+                if (activeTab !== 'results') {
+                  e.currentTarget.style.background = 'transparent'; 
+                  e.currentTarget.style.color = '#555'; 
+                  e.currentTarget.style.borderLeft = '4px solid transparent'; 
+                }
+              }}
             >
-              <FileSpreadsheet size={22} /> 
+              <FileSpreadsheet size={22} color={activeTab === 'results' ? 'var(--accent-pink)' : '#888'} /> 
               My Results
             </button>
           </div>
@@ -278,20 +343,28 @@ export default function StudentDashboard() {
         <section style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
             <div style={{ width: '6px', height: '24px', background: 'linear-gradient(135deg, var(--accent-pink), var(--accent-orange))', borderRadius: '4px' }}></div>
-            <h3 style={{ fontSize: '1.6rem', fontWeight: '600', margin: 0, color: '#333' }}>Available Exams</h3>
+            <h3 style={{ fontSize: '1.6rem', fontWeight: '600', margin: 0, color: '#333' }}>
+              {activeTab === 'dashboard' ? 'Available Exams' : 'My Completed Exams'}
+            </h3>
           </div>
           
-          {exams.length === 0 ? (
+          {displayedExams.length === 0 ? (
             <div style={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '400px', background: 'rgba(255,255,255,0.8)', borderRadius: '24px', boxShadow: '0 10px 40px rgba(0,0,0,0.02)' }}>
               <div style={{ textAlign: 'center', color: '#999' }}>
                 <FileText size={72} style={{ margin: '0 auto 24px', opacity: 0.4, color: 'var(--accent-pink)' }} />
-                <h3 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '12px', color: '#444' }}>No Current Exam Available</h3>
-                <p style={{ fontSize: '1.1rem', color: '#888' }}>Check back later when your teacher creates a new exam.</p>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '12px', color: '#444' }}>
+                  {activeTab === 'dashboard' ? 'No Current Exam Available' : 'No Completed Exams'}
+                </h3>
+                <p style={{ fontSize: '1.1rem', color: '#888' }}>
+                  {activeTab === 'dashboard' 
+                    ? 'Check back later when your teacher creates a new exam.' 
+                    : 'Attempt exams from your dashboard to see your results here.'}
+                </p>
               </div>
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '32px' }}>
-              {exams.map((exam) => {
+              {displayedExams.map((exam) => {
                 const examSubs = getSubmissionsForExam(exam.id);
                 const isEvaluated = examSubs.length > 0;
                 const avgPercentage = isEvaluated 
@@ -310,7 +383,27 @@ export default function StudentDashboard() {
                       <div style={{ padding: '14px', background: '#fdf3f6', borderRadius: '16px', color: 'var(--accent-pink)' }}>
                         <FileText size={28} />
                       </div>
-                      <h4 style={{ fontSize: '1.25rem', fontWeight: '600', margin: 0, lineHeight: 1.5, color: '#222' }}>{exam.title}</h4>
+                      <div>
+                        <h4 style={{ fontSize: '1.25rem', fontWeight: '600', margin: 0, lineHeight: 1.5, color: '#222' }}>{exam.title}</h4>
+                        {exam.notes_file ? (
+                          <div style={{ fontSize: '0.8rem', color: '#0369a1', background: '#e0f2fe', padding: '3px 8px', borderRadius: '100px', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px' }}>
+                            <span style={{ fontWeight: '500' }}>📄 Notes:</span> {exam.notes_file.split('-').slice(1).join('-')}
+                            <a 
+                              href={"http://localhost:5000/uploads/" + exam.notes_file} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              style={{ textDecoration: 'underline', marginLeft: '4px', fontWeight: 'bold', color: '#0284c7' }}
+                              onClick={e => e.stopPropagation()}
+                            >
+                              View
+                            </a>
+                          </div>
+                        ) : (
+                          <div style={{ fontSize: '0.8rem', color: '#b45309', background: '#fef3c7', padding: '3px 8px', borderRadius: '100px', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '6px' }}>
+                            <span>⚠️ No Notes Attached</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                     
                     {isEvaluated ? (

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowLeft, Edit2, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -8,13 +8,24 @@ export default function ExamManagement() {
   const [expandedExam, setExpandedExam] = useState(null);
   const [examQuestions, setExamQuestions] = useState({});
   const [editingExam, setEditingExam] = useState(null);
+  const [editingExamNotes, setEditingExamNotes] = useState(null);
   const [editingQuestion, setEditingQuestion] = useState(null);
   
+  const [addingQuestionToExam, setAddingQuestionToExam] = useState(null);
+  const [newQuestionText, setNewQuestionText] = useState('');
+  const [newModelAnswer, setNewModelAnswer] = useState('');
+  
   const navigate = useNavigate();
+  const location = useLocation();
   const token = localStorage.getItem('token');
 
   useEffect(() => {
     fetchExams();
+    if (location.state?.openExamId) {
+      const openId = parseInt(location.state.openExamId);
+      setExpandedExam(openId);
+      fetchQuestions(openId);
+    }
   }, []);
 
   const fetchExams = async () => {
@@ -83,21 +94,32 @@ export default function ExamManagement() {
 
   const handleUpdateExam = async (examId) => {
     if (!editingExam.title.trim()) return alert("Title cannot be empty.");
+    
+    const formData = new FormData();
+    formData.append('title', editingExam.title);
+    if (editingExamNotes) {
+      formData.append('notes', editingExamNotes);
+    }
+
     try {
-      await axios.put(`http://localhost:5000/api/exams/${examId}`, { title: editingExam.title }, {
-        headers: { Authorization: `Bearer ${token}` }
+      await axios.put(`http://localhost:5000/api/exams/${examId}`, formData, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
       });
       setEditingExam(null);
+      setEditingExamNotes(null);
       fetchExams();
     } catch (err) {
       console.error(err);
-      alert("Failed to update exam.");
+      alert(err.response?.data?.error || "Failed to update exam.");
     }
   };
 
   const handleUpdateQuestion = async (questionId, examId) => {
-    if (!editingQuestion.question_text.trim() || !editingQuestion.model_answer.trim()) {
-      return alert("Fields cannot be empty.");
+    if (!editingQuestion.question_text.trim()) {
+      return alert("Question text cannot be empty.");
     }
     try {
       await axios.put(`http://localhost:5000/api/questions/${questionId}`, { 
@@ -111,6 +133,40 @@ export default function ExamManagement() {
     } catch (err) {
       console.error(err);
       alert("Failed to update question.");
+    }
+  };
+
+  const handleAddQuestion = async (examId) => {
+    if (!newQuestionText.trim()) {
+      return alert("Question text cannot be empty.");
+    }
+    try {
+      await axios.post(`http://localhost:5000/api/exams/${examId}/questions`, {
+        question_text: newQuestionText,
+        model_answer: newModelAnswer
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setAddingQuestionToExam(null);
+      setNewQuestionText('');
+      setNewModelAnswer('');
+      fetchQuestions(examId);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to add question.");
+    }
+  };
+
+  const handleReindexExamNotes = async (e, examId) => {
+    e.stopPropagation();
+    try {
+      const res = await axios.post(`http://localhost:5000/api/exams/${examId}/reindex`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      alert(`Success: ${res.data.message} (${res.data.chunks} chunks indexed)`);
+    } catch (err) {
+      console.error(err);
+      alert("Re-indexing failed: " + (err.response?.data?.error || err.message));
     }
   };
 
@@ -146,15 +202,53 @@ export default function ExamManagement() {
                         className="input-field" 
                         value={editingExam.title} 
                         onChange={(e) => setEditingExam({...editingExam, title: e.target.value})}
-                        style={{ padding: '8px', flex: 1 }}
+                        style={{ padding: '10px', width: '100%' }}
                       />
-                      <button className="btn-primary" onClick={() => handleUpdateExam(exam.id)}>Save</button>
-                      <button className="btn-secondary" onClick={() => setEditingExam(null)}>Cancel</button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: '600' }}>Update Notes:</span>
+                        <input 
+                          type="file" 
+                          accept=".pdf,.docx,.txt"
+                          onChange={(e) => setEditingExamNotes(e.target.files[0])}
+                          style={{ fontSize: '0.85rem' }}
+                        />
+                      </div>
+                      <div className="flex-col-mobile" style={{ display: 'flex', gap: '10px' }}>
+                        <button className="btn-primary" style={{ padding: '8px 20px', fontSize: '0.95rem' }} onClick={() => handleUpdateExam(exam.id)}>Save</button>
+                        <button className="btn-secondary" style={{ padding: '8px 20px', fontSize: '0.95rem' }} onClick={() => { setEditingExam(null); setEditingExamNotes(null); }}>Cancel</button>
+                      </div>
                     </div>
                   ) : (
-                    <h3 style={{ margin: 0, fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      {exam.title}
-                    </h3>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        {exam.title}
+                      </h3>
+                      {exam.notes_file ? (
+                        <div style={{ fontSize: '0.85rem', color: '#0369a1', background: '#e0f2fe', padding: '4px 10px', borderRadius: '100px', display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
+                          <span style={{ fontWeight: '600' }}>📄 Notes:</span> {exam.notes_file.split('-').slice(1).join('-')}
+                          <a 
+                            href={"http://localhost:5000/uploads/" + exam.notes_file} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            style={{ textDecoration: 'underline', marginLeft: '2px', fontWeight: 'bold', color: '#0284c7' }}
+                            onClick={e => e.stopPropagation()}
+                          >
+                            View
+                          </a>
+                          <span>|</span>
+                          <button
+                            onClick={(e) => handleReindexExamNotes(e, exam.id)}
+                            style={{ background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', fontWeight: '600', padding: 0, textDecoration: 'underline', fontSize: '0.85rem' }}
+                          >
+                            Re-index AI
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: '0.85rem', color: '#b45309', background: '#fef3c7', padding: '4px 10px', borderRadius: '100px', display: 'inline-flex', alignItems: 'center', gap: '5px', marginTop: '6px' }}>
+                          <span>⚠️ No Notes Uploaded</span>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
                 
@@ -177,7 +271,60 @@ export default function ExamManagement() {
               {/* Questions List */}
               {expandedExam === exam.id && (
                 <div style={{ padding: '0 20px 20px 20px', borderTop: '1px solid #eaeaea', marginTop: '10px' }}>
-                  <h4 style={{ margin: '15px 0', color: 'var(--text-muted)' }}>Questions inside this exam:</h4>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '15px 0' }}>
+                    <h4 style={{ margin: 0, color: 'var(--text-muted)' }}>Questions inside this exam:</h4>
+                    {addingQuestionToExam !== exam.id && (
+                      <button 
+                        className="btn-primary" 
+                        style={{ padding: '6px 15px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '5px' }}
+                        onClick={() => {
+                          setAddingQuestionToExam(exam.id);
+                          setNewQuestionText('');
+                          setNewModelAnswer('');
+                        }}
+                      >
+                        + Add Question
+                      </button>
+                    )}
+                  </div>
+
+                  {addingQuestionToExam === exam.id && (
+                    <div style={{ background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '8px', padding: '15px', marginBottom: '20px' }}>
+                      <h5 style={{ margin: '0 0 10px 0', fontSize: '0.95rem', fontWeight: 600 }}>Add New Question</h5>
+                      <textarea
+                        className="input-field"
+                        placeholder="Question Text"
+                        value={newQuestionText}
+                        onChange={(e) => setNewQuestionText(e.target.value)}
+                        rows={2}
+                        style={{ marginBottom: '10px', width: '100%', padding: '10px' }}
+                      />
+                      <textarea
+                        className="input-field"
+                        placeholder="Model Answer (Optional if unit notes are uploaded)"
+                        value={newModelAnswer}
+                        onChange={(e) => setNewModelAnswer(e.target.value)}
+                        rows={3}
+                        style={{ marginBottom: '10px', width: '100%', padding: '10px' }}
+                      />
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <button 
+                          className="btn-primary" 
+                          style={{ padding: '6px 15px', fontSize: '0.85rem' }}
+                          onClick={() => handleAddQuestion(exam.id)}
+                        >
+                          Save Question
+                        </button>
+                        <button 
+                          className="btn-secondary" 
+                          style={{ padding: '6px 15px', fontSize: '0.85rem' }}
+                          onClick={() => setAddingQuestionToExam(null)}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   
                   {!examQuestions[exam.id] ? (
                     <p>Loading questions...</p>
@@ -195,12 +342,14 @@ export default function ExamManagement() {
                                 value={editingQuestion.question_text} 
                                 onChange={(e) => setEditingQuestion({...editingQuestion, question_text: e.target.value})}
                                 rows={2}
+                                placeholder="Question Text"
                               />
                               <textarea 
                                 className="input-field" 
                                 value={editingQuestion.model_answer} 
                                 onChange={(e) => setEditingQuestion({...editingQuestion, model_answer: e.target.value})}
                                 rows={3}
+                                placeholder="Model Answer (Optional if unit notes are uploaded)"
                               />
                               <div className="flex-col-mobile" style={{ display: 'flex', gap: '10px' }}>
                                 <button className="btn-primary" onClick={() => handleUpdateQuestion(q.id, exam.id)}>Save</button>
@@ -211,7 +360,11 @@ export default function ExamManagement() {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                               <div style={{ flex: 1, paddingRight: '20px' }}>
                                 <p style={{ fontWeight: 600, margin: '0 0 10px 0' }}>Q{idx + 1}. {q.question_text}</p>
-                                <p style={{ margin: 0, fontSize: '0.9rem', color: '#666' }}><strong>Model Answer:</strong> {q.model_answer}</p>
+                                {q.model_answer ? (
+                                  <p style={{ margin: 0, fontSize: '0.9rem', color: '#666' }}><strong>Model Answer:</strong> {q.model_answer}</p>
+                                ) : (
+                                  <p style={{ margin: 0, fontSize: '0.9rem', color: '#0284c7', fontStyle: 'italic', fontWeight: 500 }}>Graded using uploaded unit notes</p>
+                                )}
                               </div>
                               <div style={{ display: 'flex', gap: '10px' }}>
                                 <button onClick={() => setEditingQuestion({ id: q.id, question_text: q.question_text, model_answer: q.model_answer })} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent-blue)' }}>
